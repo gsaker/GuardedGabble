@@ -1,22 +1,37 @@
 import socket
 import threading
 class Server:
-    def __init__(self,serverName):
-        self.serverName = serverName
-        self.port = 64148
-        self.connectServer(serverName)
-    def connectServer(self,serverName):
+    def __init__(self,host,port):
+        #Setting attributes
+        self.host = host
+        self.port = port
+    def connectServer(self):
+        #Create socket object and try to connect to server, if it fails then return false and print error message
+        #If it succeeds then return true and print success message
         self.clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         try:
-            self.clientSocket.connect((self.serverName,self.port))
+            self.clientSocket.connect((self.host,self.port))
+            print("Connected to server")
+            return True
         except:
-            print("Connection refused")
+            print("Connection failed")
+            return False
     def recieveMessage(self):
         while True:
             recievedMessage = self.clientSocket.recv(1024)
             print("Server:",recievedMessage.decode())
     def sendMessage(self,sendData):
         self.clientSocket.send(sendData.encode())
-mainServer=Server('127.0.0.1')
-receiveThread = threading.Thread(target=mainServer.recieveMessage)
-receiveThread.start()
+#Setting up test variables
+localhost = '127.0.0.1'
+port = 64147
+#Creating server object
+mainServer=Server(localhost,port)
+#If connection is successful then start recieve thread and start recieving messages
+if mainServer.connectServer():
+    receiveThread = threading.Thread(target=mainServer.recieveMessage)
+    receiveThread.start()
+    #Demonstration loop to keep sending messages from user input
+    while True:
+        message = input("Enter message:")
+        mainServer.sendMessage(message)

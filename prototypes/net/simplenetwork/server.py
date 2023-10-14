@@ -1,4 +1,5 @@
 import socket 
+
 def startServer(host,port):
     serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     #Double bracket used to make tuple
@@ -20,3 +21,6 @@ def startServer(host,port):
 #In this example we will use the localhost as the server and client
 #Are running on the same machine
 startServer('127.0.0.1',64148)
+
+
+
