@@ -6,6 +6,7 @@ class Client:
         #Setting attributes
         self.socket = socket
         self.host = host
+        self.userID = 
     def recieveMessage(self):
         while True:
             recievedMessage = self.socket.recv(1024)
@@ -24,6 +25,16 @@ def startServer(host,port):
         newClient = Client(clientSocket,clientAddress)
         receiveThread = threading.Thread(target=newClient.recieveMessage)
         receiveThread.start()
+class Clients:
+    def __init__(self):
+        self.clients = {}
+    def addClient(self,client):
+        self.clients[client.host] = client
+    def removeClient(self,client):
+        self.clients.pop(client.host)
+    def sendMessage(self,sendData,host):
+        self.clients[host].sendMessage(sendData)
+
 #Setting up test variables
 localhost = '127.0.0.1'
 port = 64147
