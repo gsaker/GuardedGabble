@@ -1,1 +1,2 @@
-# GuardedGabble - An encrypted chat messaging app
+# GuardedGabble
+## A self hosted encrypted chat messaging app
