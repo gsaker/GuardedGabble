@@ -3,25 +3,46 @@ import json
 programName = "GuardedBabble"
 class File:
     def __init__(self, filepath):
+        #Filepath is relative to the base data directory
         self.filePath = filepath
         self.dataDir = self.loadDataDir()
         self.fullPath = os.path.join(self.dataDir, self.filePath)
+        self.createDirectory(self.fullPath)
+        print(self.fullPath)
+        #Create file if it doesn't exist
         try:
             with open(self.fullPath, "r") as file:
                 pass
         except FileNotFoundError:
             writeFile = open(self.fullPath, "w")
+            json.dump({}, writeFile)
             writeFile.close()
     def loadDataDir(self):
-        if not os.path.isdir(self.dataDir):
-            os.makedirs(self.dataDir)
+        #Create data directory if it doesn't exist
+        dataDir = os.path.join(os.path.expanduser("~"), ".config", programName)
+        if not os.path.isdir(dataDir):
+            os.makedirs(dataDir)
+        #Return data directory
         return os.path.join(os.path.expanduser("~"), ".config", programName)
+    def createDirectory(self, directoryPath):
+        #Create directory if it doesn't exist
+        if not os.path.isdir(directoryPath):
+            os.makedirs(directoryPath)
     def createObject(self,key,data):
-        fullPath = os.path.join(self.dataDir, self.filePath)
+        jsonData = self.readJSON()
+        # create newData tuple
         newData = {key: data}
-        with open(fullPath, "r") as file:
-            jsonData = json.load(file)  # read existing JSON data
-        jsonData.update(newData)  # add new data to existing JSON object
-        with open(fullPath, "w") as file:
-            json.dump(jsonData, file)  # write updated JSON object to file
-testFile = File("test.json")
+        # update either adds or modifies the data
+        jsonData.update(newData)
+        self.writeJSON(jsonData)
+    def readObject(self,key):
+        jsonData = self.readJSON()
+        return jsonData[key]
+    def readJSON(self):
+        #Read JSON file and return as dictionary
+        with open(self.fullPath, "r") as file:
+            return json.load(file)
+    def writeJSON(self, jsonData):
+        #Write dictionary to JSON file
+        with open(self.fullPath, "w") as file:
+            json.dump(jsonData, file)
