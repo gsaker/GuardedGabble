@@ -1,5 +1,6 @@
-import os
 import json
+import os
+from pathlib import Path
 programName = "GuardedBabble"
 class File:
     def __init__(self, filepath):
@@ -7,16 +8,19 @@ class File:
         self.filePath = filepath
         self.dataDir = self.loadDataDir()
         self.fullPath = os.path.join(self.dataDir, self.filePath)
-        self.createDirectory(self.fullPath)
-        print(self.fullPath)
+        self.createDirectory(os.path.dirname(self.fullPath))
         #Create file if it doesn't exist
-        try:
-            with open(self.fullPath, "r") as file:
-                pass
-        except FileNotFoundError:
+        if not os.path.isfile(self.fullPath):
+            print("File not found, creating file")
             writeFile = open(self.fullPath, "w")
             json.dump({}, writeFile)
             writeFile.close()
+    def getFullPath(self,filepath):
+        #Get full path of file, sets to string in case it's a Path object
+        filePath = str(filepath)
+        dataDir = str(self.loadDataDir())
+        fullPath = os.path.join(dataDir, filePath)
+        return fullPath
     def loadDataDir(self):
         #Create data directory if it doesn't exist
         dataDir = os.path.join(os.path.expanduser("~"), ".config", programName)
@@ -46,3 +50,4 @@ class File:
         #Write dictionary to JSON file
         with open(self.fullPath, "w") as file:
             json.dump(jsonData, file)
+            

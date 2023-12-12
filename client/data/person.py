@@ -1,24 +1,47 @@
 import datetime
 from file import File
 from pathlib import Path
+import os 
 class Person(File):
     def __init__(self, userID, username):
+        # Initialize Person object with userID and username
         self.userID = userID
         self.username = username
         self.filepath = Path("people/" + self.userID + ".json")
         self.chatID = 0
+        self.fullPath = super().getFullPath(self.filepath)
+        existed = os.path.isfile(self.fullPath)
         super().__init__(self.filepath)
+        # If the file does not exist, set initial attributes
+        if not existed:
+            print("Setting attributes")
+            super().createObject("username", self.username)
+            super().createObject("userID", self.userID)
+            super().createObject("chatID", 0)
+            super().createObject("chats", {})
     def appendChat(self, recievedBool, messageContent):
+        # Append a new chat to the Person object
+        self.chatID = super().readObject("chatID")
         date = datetime.datetime.now()
-        #Create chat object
+        # Create chat object with date, received status, and message content
         chat = {
-            "date": date,
+            "date": str(date.isoformat()),
             "recieved": recievedBool,
             "message": messageContent
         }
-        #Append chat object to chats list
-        super.createObject(self.chatID, chat)
-        #Increment chatID
+        # Read chats dictionary from JSON
+        chats = super().readObject("chats")
+        # Append chat to dictionary at the next chatID
+        chats[self.chatID] = chat
+        # Write updated chats back to JSON
+        super().createObject("chats", chats)
+        # Increment chatID
         self.chatID += 1
+        super().createObject("chatID", self.chatID)
     def getChat(self, chatID):
-        return super.readObject(chatID)
+        # Retrieve a specific chat from the Person object
+        return super().readObject(["chats"][int(chatID)])
+    def getChats(self):
+        return super().readObject("chats")
+    def readJSON(self):
+        return super().readJSON()
