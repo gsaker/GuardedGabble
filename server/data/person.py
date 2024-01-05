@@ -1,9 +1,9 @@
 import datetime
-from data.file import File
+from file import File
 from pathlib import Path
 import os 
 class Person(File):
-    def __init__(self, userID, username=None):
+    def __init__(self, userID, username):
         # Initialize Person object with userID and username
         self.userID = userID
         self.username = username
@@ -19,8 +19,6 @@ class Person(File):
             super().createObject("userID", self.userID)
             super().createObject("chatID", 0)
             super().createObject("chats", {})
-        else:
-            self.username = super().readObject("username")
     def appendChat(self, recievedBool, messageContent):
         # Append a new chat to the Person object
         self.chatID = super().readObject("chatID")

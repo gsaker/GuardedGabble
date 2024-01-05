@@ -3,8 +3,8 @@ from . import data
 class Server:
     def __init__(self,serverHost,serverPort):
         #Setting attributes
-        self.serverPort = 64148
         self.serverPort = serverPort
+        self.serverHost = serverHost
     def connectServer(self):
         #Create socket object and try to connect to server, if it fails then return false and print error message
         #If it succeeds then return true and print success message
