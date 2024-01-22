@@ -40,7 +40,9 @@ class MainWindow(QWidget):
         self.scrollAreaWidget = QWidget()
         self.scrollAreaWidget.setLayout(self.scrollAreaLayout)
         self.scrollArea.setWidget(self.scrollAreaWidget)
- 
+
+        #add spacer, this is to ensure chat bubbles don't fill the screen when they are created
+        self.spacerItem = QSpacerItem(20, 10000, QSizePolicy.Minimum, QSizePolicy.Expanding)
         #create input box for chat messages
         self.messageInput = QTextEdit()
         self.messageInput.setPlaceholderText("Chat Message Here...")
@@ -90,7 +92,12 @@ class MainWindow(QWidget):
             self.chatSelectAreaLayout.addWidget(button)
     def sendMessage(self):
         message = self.messageInput.toPlainText()
-        self.scrollAreaLayout.addWidget(ChatBubble(message, True))
+        newChatBubble = ChatBubble(message, True)
+        self.addWithSpacer(newChatBubble)
+    def addWithSpacer(self,item):
+        self.scrollAreaLayout.removeItem(self.spacerItem)
+        self.scrollAreaLayout.addWidget(item)
+        self.scrollAreaLayout.addItem(self.spacerItem)
 
 class ChatBubble(QWidget):
     # This class is used to create the chat bubble
