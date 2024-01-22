@@ -1,6 +1,9 @@
+import os
+import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from qdarkstyle import load_stylesheet_pyqt5
 class MainWindow(QWidget):
     messageReceived = pyqtSignal(str)
     def __init__(self, app):
@@ -10,6 +13,9 @@ class MainWindow(QWidget):
         self.initUI()
 
     def initUI(self):
+        #loading the dark theme, in the future this will be a setting
+        darkStylesheet = load_stylesheet_pyqt5()
+        self.setStyleSheet(darkStylesheet)
         self.setWindowTitle('Chat Window')
         #Set minimum width of window to make sure chat experience is consistent
         self.setGeometry(100, 100, 770, 700) 
@@ -42,15 +48,22 @@ class MainWindow(QWidget):
 
         #create buttons
         self.sendButton = QPushButton('Send')
+        self.sendButton.clicked.connect(lambda _,: self.sendMessage())
         self.settingButton = QPushButton('Settings')
         self.idButton = QPushButton('View ID')
         self.quitButton = QPushButton('Quit')
+        #wtf is this
+        self.quitButton.clicked.connect(lambda _,: os.system("pkill Python"))
         self.helpButton = QPushButton('Help')
 
         #create layouts
         self.buttonLayout = QHBoxLayout()
         self.buttonLayout.addWidget(self.sendButton)
         self.buttonLayout.addWidget(self.settingButton)
+        self.buttonLayout.addWidget(self.idButton)
+        self.buttonLayout.addWidget(self.quitButton)
+        self.buttonLayout.addWidget(self.helpButton)
+
 
         self.inputLayout = QVBoxLayout()
         self.inputLayout.addWidget(self.messageInput)
@@ -75,4 +88,56 @@ class MainWindow(QWidget):
             #this function will be implemented later
             button.clicked.connect(lambda _, person=self.app.people[person]: self.openChatWindow(person))
             self.chatSelectAreaLayout.addWidget(button)
+    def sendMessage(self):
+        message = self.messageInput.toPlainText()
+        self.scrollAreaLayout.addWidget(ChatBubble(message, True))
 
+class ChatBubble(QWidget):
+    # This class is used to create the chat bubble
+    # It is a subclass of QWidget so we can add additional requirements to the base 
+    # QTextEdit class
+    def __init__(self, message, isSentByMe):
+        super().__init__()
+        self.message = message
+        self.isSentByMe = isSentByMe
+        self.initUI()
+
+    def initUI(self):
+        self.textEdit = QTextEdit()
+        #Read only so user can't edit message
+        self.textEdit.setReadOnly(True)
+        self.textEdit.setFrameStyle(QTextEdit.NoFrame)
+        self.textEdit.document().setDocumentMargin(10)
+        #Set max width even if window is too large
+        self.setMaximumWidth(700)
+        #Hide scroll bar on messages
+        self.textEdit.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.textEdit.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.textEdit.viewport().setAutoFillBackground(False)
+        #Set stylesheet depending on if message is sent by user
+        if (self.isSentByMe):
+            #Set colour to dark blue if sent by user
+            self.textEdit.setStyleSheet("""
+            QTextEdit {
+                background-color: #19232D;
+                color: #ffffff;
+                border-radius: 10px;
+                padding: 8px;
+                font-size: 14px;
+            }
+            """)
+        else:
+            #Set colour to dark grey if sent by other user
+            self.textEdit.setStyleSheet("""
+            QTextEdit {
+                background-color: #455364;
+                color: #ffffff;
+                border-radius: 10px;
+                padding: 8px;
+                font-size: 14px;
+            }
+            """)
+        self.layout = QHBoxLayout(self)
+        self.layout.addWidget(self.textEdit)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.textEdit.setText(self.message)

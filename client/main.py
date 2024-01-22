@@ -72,7 +72,7 @@ class App:
         sys.exit(self.applicationWindow.exec_())
     def connectServer(self):
         #Creating server object
-        self.mainServer=server.Server(self.serverHost,self.serverPort)
+        self.mainServer=server.Server(self.serverHost,self.serverPort, self)
         #Create a config file object to get username
         #If connection is successful then start recieve thread and start recieving messages
         if self.mainServer.connectServer():
@@ -94,6 +94,14 @@ class App:
         newPersonFile = person.Person(userID, username=username)
         self.people[userID] = newPersonFile
         self.peopleFile.appendObject("people",userID)
+    def recievedMessage(self, senderID, messageContent):
+        #This method will be called when a message is recieved
+        #This will be added to later as more request types are added
+        #For now it will just print the message
+        print("Recieved message from",senderID)
+        print("Message:",messageContent)
+        self.people[senderID].addMessage(messageContent)
+        self.chatWindow.updateChatWindow()
 
             
         

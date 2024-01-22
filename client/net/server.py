@@ -1,8 +1,9 @@
 import socket
 from . import data
 class Server:
-    def __init__(self,serverHost,serverPort):
+    def __init__(self,serverHost,serverPort, app):
         #Setting attributes
+        self.app = app
         self.serverPort = serverPort
         self.serverHost = serverHost
     def connectServer(self):
@@ -60,5 +61,6 @@ class Server:
     def handleMessageResponse(self,recievedRequest):
         #specific handler for a message response from the server
         #prints out the message content and the sender
-        print("Message from:",recievedRequest.get("senderID"))
-        print("Message:",recievedRequest.get("messageContent"))
+        # print("Message from:",recievedRequest.get("senderID"))
+        # print("Message:",recievedRequest.get("messageContent"))
+        self.app.recievedMessage(recievedRequest.get("senderID"),recievedRequest.get("messageContent"))
