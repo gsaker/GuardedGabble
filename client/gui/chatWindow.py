@@ -84,20 +84,55 @@ class MainWindow(QWidget):
         
         self.setLayout(self.mainLayout)
     def createPeopleButtons(self):
+        self.buttonDictionary = {}
         for person in self.app.people:
             button = QPushButton(self.app.people[person].username)
+            button.setStyleSheet("""
+        QPushButton {
+            background-color: #19232D;
+            color: #ffffff;
+            border: 2px solid #455364;
+            border-radius: 10px;
+            padding: 8px;
+            font-size: 14px;
+        }
+        """)
+            self.buttonDictionary[person] = button
             #call openChatWindow with the person object as an argument
             #this function will be implemented later
             button.clicked.connect(lambda _, person=self.app.people[person]: self.openChatWindow(person))
             self.chatSelectAreaLayout.addWidget(button)
+        #adress dictionary based on order added to layout
+        #this is so we can change the colour of the button when a message is recieved
+        self.chatSelectAreaLayout.itemAt(0).widget().setStyleSheet("""
+        QPushButton {
+            background-color: #455364;
+            color: #ffffff;
+            border: 2px solid #455364;
+            border-radius: 10px;
+            padding: 8px;
+            font-size: 14px;
+        }
+        """)
     def sendMessage(self):
         message = self.messageInput.toPlainText()
         newChatBubble = ChatBubble(message, True)
         self.addWithSpacer(newChatBubble)
+        self.app.mainServer.messageRequest(message,self.currentChatPerson.userID)
     def addWithSpacer(self,item):
         self.scrollAreaLayout.removeItem(self.spacerItem)
         self.scrollAreaLayout.addWidget(item)
         self.scrollAreaLayout.addItem(self.spacerItem)
+    def openChatWindow(self, person):
+        #clear chat window
+        self.clearChatWindow()
+        #set current chat person
+        self.currentChatPerson = person
+
+    def clearChatWindow(self):
+        #clear chat window
+        for i in reversed(range(self.scrollAreaLayout.count())): 
+            self.scrollAreaLayout.itemAt(i).widget().setParent(None)
 
 class ChatBubble(QWidget):
     # This class is used to create the chat bubble

@@ -43,7 +43,6 @@ class App:
         #Load people
         self.loadPeople()
         #Add test people to check functionality
-
         self.addPerson("1","User1")
         self.addPerson("2","User2")
         self.addPerson("3","User3")
