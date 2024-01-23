@@ -101,7 +101,6 @@ class App:
         print("Message:",messageContent)
         self.people[senderID].addMessage(messageContent)
         self.chatWindow.updateChatWindow()
-
 if __name__ == "__main__":
     mainProcess = App()
     print("Done")

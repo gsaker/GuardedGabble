@@ -103,8 +103,12 @@ class MainWindow(QWidget):
             button.clicked.connect(lambda _, person=self.app.people[person]: self.openChatWindow(person))
             self.chatSelectAreaLayout.addWidget(button)
         #adress dictionary based on order added to layout
-        #this is so we can change the colour of the button when a message is recieved
-        self.chatSelectAreaLayout.itemAt(0).widget().setStyleSheet("""
+        #this is so we can change the colour of the button when the user selects it
+        self.setSelectedButtonColour(self.chatSelectAreaLayout.itemAt(0).widget())
+        self.currentChatPerson = self.app.people[list(self.app.people.keys())[0]]
+    def setSelectedButtonColour(self, button, oldButton=None):
+        #set clicked on button to new style    
+        button.setStyleSheet("""
         QPushButton {
             background-color: #455364;
             color: #ffffff;
@@ -114,11 +118,24 @@ class MainWindow(QWidget):
             font-size: 14px;
         }
         """)
+        #remove style from current button
+        if oldButton!=None and oldButton!=button:
+            oldButton.setStyleSheet("""
+            QPushButton {
+                background-color: #19232D;
+                color: #ffffff;
+                border: 2px solid #455364;
+                border-radius: 10px;
+                padding: 8px;
+                font-size: 14px;
+            }
+            """)                                                                   
     def sendMessage(self):
         message = self.messageInput.toPlainText()
         newChatBubble = ChatBubble(message, True)
         self.addWithSpacer(newChatBubble)
-        self.app.mainServer.messageRequest(message,self.currentChatPerson.userID)
+        self.currentChatPerson.appendChat(False, message)
+        #self.app.mainServer.messageRequest(message,self.currentChatPerson.userID)
     def addWithSpacer(self,item):
         self.scrollAreaLayout.removeItem(self.spacerItem)
         self.scrollAreaLayout.addWidget(item)
@@ -127,12 +144,17 @@ class MainWindow(QWidget):
         #clear chat window
         self.clearChatWindow()
         #set current chat person
+        self.setSelectedButtonColour(self.buttonDictionary[person.userID], self.buttonDictionary[self.currentChatPerson.userID])
         self.currentChatPerson = person
-
+        chatContents = self.currentChatPerson.getChats()
+        for chat in chatContents:
+            newChatBubble = ChatBubble(chatContents[chat]["message"], not chatContents[chat]["recieved"])
+            self.addWithSpacer(newChatBubble)
     def clearChatWindow(self):
         #clear chat window
-        for i in reversed(range(self.scrollAreaLayout.count())): 
-            self.scrollAreaLayout.itemAt(i).widget().setParent(None)
+        for i in range(self.scrollAreaLayout.count()-1):
+            print(i)
+            self.scrollAreaLayout.itemAt(i).widget().deleteLater()
 
 class ChatBubble(QWidget):
     # This class is used to create the chat bubble
@@ -152,6 +174,7 @@ class ChatBubble(QWidget):
         self.textEdit.document().setDocumentMargin(10)
         #Set max width even if window is too large
         self.setMaximumWidth(700)
+        self.setMinimumHeight(55)
         #Hide scroll bar on messages
         self.textEdit.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.textEdit.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
