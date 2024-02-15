@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from qdarkstyle import load_stylesheet_pyqt5
+from PyQt5.QtWidgets import QInputDialog
 class MainWindow(QWidget):
     messageReceived = pyqtSignal(str)
     def __init__(self, app):
@@ -16,10 +17,11 @@ class MainWindow(QWidget):
         #loading the dark theme, in the future this will be a setting
         darkStylesheet = load_stylesheet_pyqt5()
         self.setStyleSheet(darkStylesheet)
-        self.setWindowTitle('Chat Window')
+        self.setWindowTitle('Chat Window' + str(self.app.appNo))
         #Set minimum width of window to make sure chat experience is consistent
         self.setGeometry(100, 100, 770, 700) 
         #QScrollarea to allow for scrollling through people list
+        self.leftLayout = QVBoxLayout()
         self.chatSelectArea = QScrollArea()
         self.chatSelectArea.setWidgetResizable(True)
         # vbox layout so new buttons are added vertically
@@ -31,7 +33,10 @@ class MainWindow(QWidget):
         self.createPeopleButtons()
         #add stretch to make sure buttons are at top of list
         self.chatSelectAreaLayout.addStretch()
-
+        self.addUserButton = QPushButton('Add User')
+        self.addUserButton.clicked.connect(self.addUserClicked)
+        self.leftLayout.addWidget(self.addUserButton)
+        self.leftLayout.addWidget(self.chatSelectArea)
         #create scroll area for chat messages
         self.scrollArea = QScrollArea()
         self.scrollArea.setWidgetResizable(True)
@@ -52,10 +57,8 @@ class MainWindow(QWidget):
         self.sendButton = QPushButton('Send')
         self.sendButton.clicked.connect(lambda _,: self.sendMessage())
         self.settingButton = QPushButton('Settings')
-        self.idButton = QPushButton('View ID')
+        self.idButton = QPushButton(str(self.app.userID))
         self.quitButton = QPushButton('Quit')
-        #wtf is this
-        self.quitButton.clicked.connect(lambda _,: os.system("pkill Python"))
         self.helpButton = QPushButton('Help')
 
         #create layouts
@@ -75,7 +78,7 @@ class MainWindow(QWidget):
         self.rightLayout.addLayout(self.inputLayout)
 
         self.topLayout = QHBoxLayout()
-        self.topLayout.addWidget(self.chatSelectArea,1)
+        self.topLayout.addLayout(self.leftLayout,1)
         self.topLayout.addLayout(self.rightLayout,3)
 
         self.mainLayout = QVBoxLayout()
@@ -83,6 +86,18 @@ class MainWindow(QWidget):
         self.mainLayout.addLayout(self.buttonLayout)
         
         self.setLayout(self.mainLayout)
+    def addUserClicked(self):
+        #Shows an input box to enter the userID and gets the outputs
+        text, ok = QInputDialog.getText(self, 'Add User', 'Enter User ID:')
+        # Only continue if the user clicked ok
+        if ok:
+            userId = text
+            # Add the user to the people list
+            # For now we will user the userID as the username, when the other person sends a message the actual username will be populated
+            self.app.addPerson(userId, userId)
+            # Recreate the buttons to include the new user
+            self.createPeopleButtons()
+
     def createPeopleButtons(self):
         self.buttonDictionary = {}
         for person in self.app.people:
@@ -135,7 +150,8 @@ class MainWindow(QWidget):
         newChatBubble = ChatBubble(message, True)
         self.addWithSpacer(newChatBubble)
         self.currentChatPerson.appendChat(False, message)
-        #self.app.mainServer.messageRequest(message,self.currentChatPerson.userID)
+        self.app.mainServer.messageRequest(message, self.currentChatPerson.userID)
+        
     def addWithSpacer(self,item):
         self.scrollAreaLayout.removeItem(self.spacerItem)
         self.scrollAreaLayout.addWidget(item)
@@ -143,15 +159,20 @@ class MainWindow(QWidget):
     def openChatWindow(self, person):
         #clear chat window
         self.clearChatWindow()
-        #set current chat person
+        #set current chat person, passing the new person 
+        #and current person buttons as arguments
         self.setSelectedButtonColour(self.buttonDictionary[person.userID], self.buttonDictionary[self.currentChatPerson.userID])
+        #change the current chat person to the selected person
         self.currentChatPerson = person
+        #get the contents of the chats and add each one to the view
         chatContents = self.currentChatPerson.getChats()
         for chat in chatContents:
             newChatBubble = ChatBubble(chatContents[chat]["message"], not chatContents[chat]["recieved"])
             self.addWithSpacer(newChatBubble)
     def clearChatWindow(self):
         #clear chat window
+        #iterate through each item in the scroll area layout
+        #except for the last on and remove them
         for i in range(self.scrollAreaLayout.count()-1):
             print(i)
             self.scrollAreaLayout.itemAt(i).widget().deleteLater()

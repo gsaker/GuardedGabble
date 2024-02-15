@@ -8,15 +8,16 @@ from PyQt5.QtWidgets import QApplication
 import sys
 #Test data
 class App:
-    def __init__(self):
+    def __init__(self, appNo):
         print("Starting GuardedBabble")
         #This is just test data, in the future there will be a method that runs first time setup
         self.serverHost = '127.0.0.1'
         self.serverPort = 64147
         self.username = "User1"
+        self.appNo = appNo
         #Create config and people file object
-        self.configFile = file.File("config.json")
-        self.peopleFile = file.File("people.json")
+        self.configFile = file.File("config.json", self.appNo)
+        self.peopleFile = file.File("people.json", self.appNo)
         #Connect to server
         self.connectServer()
         if self.configFile.newFile:
@@ -40,29 +41,9 @@ class App:
             self.username = self.configFile.readObject("username")
         #Set stored userID
         self.userID = self.configFile.readObject("userID")
+        self.mainServer.userID = self.userID
         #Load people
         self.loadPeople()
-        #Add test people to check functionality
-        self.addPerson("1","User1")
-        self.addPerson("2","User2")
-        self.addPerson("3","User3")
-        self.addPerson("4","User4")
-        self.addPerson("5","User5")
-        self.addPerson("6","User6")
-        self.addPerson("7","User7")
-        self.addPerson("8","User8")
-        self.addPerson("9","User9")
-        self.addPerson("10","User10")
-        self.addPerson("11","User11")
-        self.addPerson("12","User12")
-        self.addPerson("13","User13")
-        self.addPerson("14","User14")
-        self.addPerson("15","User15")
-        self.addPerson("16","User16")
-        self.addPerson("17","User17")
-        self.addPerson("18","User18")
-        self.addPerson("19","User19")
-        self.addPerson("20","User20")
         #Create chat window object
         self.applicationWindow = QApplication(sys.argv)
         self.chatWindow = chatWindow.MainWindow(self)
@@ -82,7 +63,7 @@ class App:
         peopleArray = self.peopleFile.readObject("people")
         self.people = {}
         for eachPerson in peopleArray:
-            newPersonFile = person.Person(eachPerson)
+            newPersonFile = person.Person(eachPerson, appNo)
             self.people[eachPerson] = newPersonFile
     def addPerson(self, userID, username):
         #check if person already exists
@@ -90,7 +71,7 @@ class App:
             print("Person already exists")
             return
         #Add a person to the people list
-        newPersonFile = person.Person(userID, username=username)
+        newPersonFile = person.Person(userID, appNo ,username)
         self.people[userID] = newPersonFile
         self.peopleFile.appendObject("people",userID)
     def recievedMessage(self, senderID, messageContent):
@@ -102,5 +83,10 @@ class App:
         self.people[senderID].addMessage(messageContent)
         self.chatWindow.updateChatWindow()
 if __name__ == "__main__":
-    mainProcess = App()
-    print("Done")
+    #Displays an error message if the user does not enter an app number
+    if len(sys.argv) != 2:
+        print("Usage: python main.py <appNo>")
+        sys.exit(1)
+    #Set the appnumber variable
+    appNo = sys.argv[1]
+    mainProcess = App(appNo)

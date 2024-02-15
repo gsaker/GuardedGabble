@@ -3,15 +3,16 @@ from data.file import File
 from pathlib import Path
 import os 
 class Person(File):
-    def __init__(self, userID, username=None):
+    def __init__(self, userID, programName, username=None ):
         # Initialize Person object with userID and username
+        self.programName = programName
         self.userID = userID
         self.username = username
         self.filepath = Path("people/" + self.userID + ".json")
         self.chatID = 0
         self.fullPath = super().getFullPath(self.filepath)
         existed = os.path.isfile(self.fullPath)
-        super().__init__(self.filepath)
+        super().__init__(self.filepath, self.programName)
         # If the file does not exist, set initial attributes
         if not existed:
             print("Setting attributes")

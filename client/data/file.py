@@ -1,9 +1,10 @@
 import json
 import os
 from pathlib import Path
-programName = "GuardedBabble"
+
 class File:
-    def __init__(self, filepath):
+    def __init__(self, filepath, programName):
+        self.programName = programName
         #Filepath is relative to the base data directory
         self.newFile = False
         self.filePath = filepath
@@ -25,11 +26,11 @@ class File:
         return fullPath
     def loadDataDir(self):
         #Create data directory if it doesn't exist
-        dataDir = os.path.join(os.path.expanduser("~"), ".config", programName)
+        dataDir = os.path.join(os.path.expanduser("~"), ".config", self.programName)
         if not os.path.isdir(dataDir):
             os.makedirs(dataDir)
         #Return data directory
-        return os.path.join(os.path.expanduser("~"), ".config", programName)
+        return os.path.join(os.path.expanduser("~"), ".config", self.programName)
     def createDirectory(self, directoryPath):
         #Create directory if it doesn't exist
         if not os.path.isdir(directoryPath):
