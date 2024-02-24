@@ -26,6 +26,21 @@ class Clients:
             print(f"User with userID {userID} not found.")
     def outputClients(self):
         print(self.__clients)
+    def updateUserID(self,oldUserID,newUserID):
+        #This method will update the userID of a client and change the dictionary key
+        print("Updating user ID")
+        #Get the client object to change the key for 
+        client = self.__clients.get(oldUserID, None)
+        #If the client exists then change the key
+        if client:
+            #Change the attribute
+            client.userID = newUserID
+            #Change the key in the dictionary
+            self.__clients[newUserID] = client
+            #Remove the old key
+            del self.__clients[oldUserID]
+        else:
+            print("User with userID"+ str(oldUserID) +"not found.")
 
 class Client:
     def __init__(self,socket,host,userID,clientsQueue):
@@ -47,13 +62,17 @@ class Client:
         #This method will send a completed JSON request to the server
         self.socket.send(sendData.encode())
     def handleRequest(self,recievedRequest):
+        print("Handling request")
         #Main handler method for when data is recieved from the client
         #This will be added to later as more request types are added
         requestType = recievedRequest.get("requestType")
+        print("Request type:",requestType)
         if requestType == 0:
             self.handleNewUser(recievedRequest)
         if requestType == 4:
             self.handleMessage(recievedRequest)
+        if requestType == 5:
+            self.handleSetUserID(recievedRequest)
     def handleNewUser(self,recievedRequest):
         #Sets username attribute to recieved data and prints out information about the new user
         self.username = recievedRequest.get("username")
@@ -69,9 +88,11 @@ class Client:
         userIDResponse.append("userID",self.userID)
         self.sendMessage(userIDResponse.createJSON())
     def handleMessage(self,recievedRequest):
+        print("Handling message")
         #This method will forward a message to the recipient
         #This means if required this data can be stored later
         allClients = self.clientsQueue.get()
+        print("Post Get")
         forwardRequest = data.SendData()
         forwardRequest.append("requestType",4)
         forwardRequest.append("recipientID",recievedRequest.get("recipientID"))
@@ -79,6 +100,15 @@ class Client:
         forwardRequest.append("messageContent",recievedRequest.get("messageContent"))
         print("New message to forward to ",recievedRequest.get("recipientID"))
         allClients.sendMessage(forwardRequest.createJSON(),int(recievedRequest.get("recipientID")))
+        self.clientsQueue.put(allClients)
+    def handleSetUserID(self,recievedRequest):
+        #This method will set the userID attribute to the recieved userID
+        print("Updating user ID from",self.userID,"to",recievedRequest.get("userID"))
+        self.newUserID = recievedRequest.get("userID")
+        allClients = self.clientsQueue.get()
+        allClients.updateUserID(self.userID,self.newUserID)
+        self.clientsQueue.put(allClients)
+
         
 
 

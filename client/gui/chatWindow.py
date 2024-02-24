@@ -6,7 +6,8 @@ from PyQt5.QtCore import *
 from qdarkstyle import load_stylesheet_pyqt5
 from PyQt5.QtWidgets import QInputDialog
 class MainWindow(QWidget):
-    messageReceived = pyqtSignal(str)
+    messageReceived = pyqtSignal()
+    addPersonToGUI = pyqtSignal()
     def __init__(self, app):
         super().__init__()
         #set variable to acess passed through app object
@@ -23,31 +24,19 @@ class MainWindow(QWidget):
         #QScrollarea to allow for scrollling through people list
         self.leftLayout = QVBoxLayout()
         self.chatSelectArea = QScrollArea()
-        self.chatSelectArea.setWidgetResizable(True)
-        # vbox layout so new buttons are added vertically
-        self.chatSelectAreaLayout = QVBoxLayout()
-        self.chatSelectAreaWidget = QWidget()
-        self.chatSelectAreaWidget.setLayout(self.chatSelectAreaLayout)
-        self.chatSelectArea.setWidget(self.chatSelectAreaWidget)
+        self.currentChatPerson = None
         #create buttons for each person in people list
         self.createPeopleButtons()
-        #add stretch to make sure buttons are at top of list
-        self.chatSelectAreaLayout.addStretch()
+
+        self.scrollArea = QScrollArea()
+        self.scrollArea.setWidgetResizable(True)
+        if self.currentChatPerson != None:
+            self.openChatWindow(self.currentChatPerson)
+        
         self.addUserButton = QPushButton('Add User')
         self.addUserButton.clicked.connect(self.addUserClicked)
         self.leftLayout.addWidget(self.addUserButton)
         self.leftLayout.addWidget(self.chatSelectArea)
-        #create scroll area for chat messages
-        self.scrollArea = QScrollArea()
-        self.scrollArea.setWidgetResizable(True)
-        self.scrollAreaLayout = QVBoxLayout()
-        self.scrollAreaLayout.setAlignment(Qt.AlignCenter)
-        self.scrollAreaWidget = QWidget()
-        self.scrollAreaWidget.setLayout(self.scrollAreaLayout)
-        self.scrollArea.setWidget(self.scrollAreaWidget)
-
-        #add spacer, this is to ensure chat bubbles don't fill the screen when they are created
-        self.spacerItem = QSpacerItem(20, 10000, QSizePolicy.Minimum, QSizePolicy.Expanding)
         #create input box for chat messages
         self.messageInput = QTextEdit()
         self.messageInput.setPlaceholderText("Chat Message Here...")
@@ -86,6 +75,9 @@ class MainWindow(QWidget):
         self.mainLayout.addLayout(self.buttonLayout)
         
         self.setLayout(self.mainLayout)
+        self.messageReceived.connect(self.openChatWindow)
+        self.addPersonToGUI.connect(self.createPeopleButtons)
+
     def addUserClicked(self):
         #Shows an input box to enter the userID and gets the outputs
         text, ok = QInputDialog.getText(self, 'Add User', 'Enter User ID:')
@@ -99,6 +91,12 @@ class MainWindow(QWidget):
             self.createPeopleButtons()
 
     def createPeopleButtons(self):
+        self.chatSelectArea.setWidgetResizable(True)
+        # vbox layout so new buttons are added vertically
+        self.chatSelectAreaLayout = QVBoxLayout()
+        self.chatSelectAreaWidget = QWidget()
+        self.chatSelectAreaWidget.setLayout(self.chatSelectAreaLayout)
+        self.chatSelectArea.setWidget(self.chatSelectAreaWidget)
         self.buttonDictionary = {}
         for person in self.app.people:
             button = QPushButton(self.app.people[person].username)
@@ -114,13 +112,15 @@ class MainWindow(QWidget):
         """)
             self.buttonDictionary[person] = button
             #call openChatWindow with the person object as an argument
-            #this function will be implemented later
             button.clicked.connect(lambda _, person=self.app.people[person]: self.openChatWindow(person))
             self.chatSelectAreaLayout.addWidget(button)
         #adress dictionary based on order added to layout
         #this is so we can change the colour of the button when the user selects it
-        self.setSelectedButtonColour(self.chatSelectAreaLayout.itemAt(0).widget())
-        self.currentChatPerson = self.app.people[list(self.app.people.keys())[0]]
+        if (self.chatSelectAreaLayout.itemAt(0) != None):
+            self.setSelectedButtonColour(self.chatSelectAreaLayout.itemAt(0).widget())
+            self.currentChatPerson = self.app.people[list(self.app.people.keys())[0]]
+        self.chatSelectAreaLayout.addStretch()
+        self.chatSelectArea.setWidget(self.chatSelectAreaWidget)
     def setSelectedButtonColour(self, button, oldButton=None):
         #set clicked on button to new style    
         button.setStyleSheet("""
@@ -156,9 +156,17 @@ class MainWindow(QWidget):
         self.scrollAreaLayout.removeItem(self.spacerItem)
         self.scrollAreaLayout.addWidget(item)
         self.scrollAreaLayout.addItem(self.spacerItem)
-    def openChatWindow(self, person):
+    def openChatWindow(self, person=None):
+        self.scrollAreaLayout = QVBoxLayout()
+        self.scrollAreaLayout.setAlignment(Qt.AlignCenter)
+        self.scrollAreaWidget = QWidget()
+        self.scrollAreaWidget.setLayout(self.scrollAreaLayout)
+        #add spacer, this is to ensure chat bubbles don't fill the screen when they are created
+        self.spacerItem = QSpacerItem(20, 10000, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.scrollAreaLayout.addItem(self.spacerItem)
+        if person == None:
+            person = self.currentChatPerson
         #clear chat window
-        self.clearChatWindow()
         #set current chat person, passing the new person 
         #and current person buttons as arguments
         self.setSelectedButtonColour(self.buttonDictionary[person.userID], self.buttonDictionary[self.currentChatPerson.userID])
@@ -169,13 +177,7 @@ class MainWindow(QWidget):
         for chat in chatContents:
             newChatBubble = ChatBubble(chatContents[chat]["message"], not chatContents[chat]["recieved"])
             self.addWithSpacer(newChatBubble)
-    def clearChatWindow(self):
-        #clear chat window
-        #iterate through each item in the scroll area layout
-        #except for the last on and remove them
-        for i in range(self.scrollAreaLayout.count()-1):
-            print(i)
-            self.scrollAreaLayout.itemAt(i).widget().deleteLater()
+        self.scrollArea.setWidget(self.scrollAreaWidget)
 
 class ChatBubble(QWidget):
     # This class is used to create the chat bubble

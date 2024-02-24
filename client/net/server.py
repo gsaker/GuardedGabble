@@ -34,6 +34,13 @@ class Server:
         userIDRequest.append("requestType",0)
         userIDRequest.append("username",username)
         self.sendData(userIDRequest.createJSON())
+    def setUserIDRequest(self,userID):
+        print("Sending request to set userID to stored value")
+        userIDRequest = data.SendData()
+        #craft the request using request type 5
+        userIDRequest.append("requestType",5)
+        userIDRequest.append("userID",userID)
+        self.sendData(userIDRequest.createJSON())
     def handleRequest(self,recievedRequest):
         #Main handler method for when data is recieved from the server
         #This will be added to later as more request types are added

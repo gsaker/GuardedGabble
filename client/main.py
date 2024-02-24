@@ -39,6 +39,8 @@ class App:
             self.serverHost = self.configFile.readObject("server")
             self.serverPort = self.configFile.readObject("port")
             self.username = self.configFile.readObject("username")
+            #Send the stored userID to the server if it exists in the config file
+            self.mainServer.setUserIDRequest(self.configFile.readObject("userID"))
         #Set stored userID
         self.userID = self.configFile.readObject("userID")
         self.mainServer.userID = self.userID
@@ -75,13 +77,20 @@ class App:
         self.people[userID] = newPersonFile
         self.peopleFile.appendObject("people",userID)
     def recievedMessage(self, senderID, messageContent):
-        #This method will be called when a message is recieved
-        #This will be added to later as more request types are added
-        #For now it will just print the message
+        #Print the message (for debugging purposes)
         print("Recieved message from",senderID)
         print("Message:",messageContent)
-        self.people[senderID].addMessage(messageContent)
-        self.chatWindow.updateChatWindow()
+        print(self.people)
+        #If the sender is not in the people list then add them
+        if senderID not in self.people:
+            print("Adding new person to people list")
+            self.addPerson(str(senderID), str(senderID))
+            #Emit signal to add person to GUI
+            self.chatWindow.addPersonToGUI.emit()
+        #Add the message to the person's chat history
+        self.people[str(senderID)].appendChat(True, messageContent)
+        #Emit signal to update chat window in different thread
+        self.chatWindow.messageReceived.emit()
 if __name__ == "__main__":
     #Displays an error message if the user does not enter an app number
     if len(sys.argv) != 2:
