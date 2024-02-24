@@ -10,7 +10,7 @@ class Request:
     def createJSON(self):
         return json.dumps(self.__requestDict)
 
-#This is the class that handles responses recieved from the server
+#This is the class that handles responses received from the server
 class Response:
     def __init__(self, responseString):
         #json.loads() converts a JSON string into a dictionary

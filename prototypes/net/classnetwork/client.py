@@ -18,8 +18,8 @@ class Server:
             return False
     def recieveMessage(self):
         while True:
-            recievedMessage = self.clientSocket.recv(1024)
-            print("Server:",recievedMessage.decode())
+            receivedMessage = self.clientSocket.recv(1024)
+            print("Server:",receivedMessage.decode())
     def sendMessage(self,sendData):
         self.clientSocket.send(sendData.encode())
 #Setting up test variables

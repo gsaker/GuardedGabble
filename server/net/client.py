@@ -56,26 +56,26 @@ class Client:
         #Will run in seperate thread
         while True:
             #Keep trying to recieve data from the client
-            recievedRequest = data.RecievedData(self.socket.recv(1024))
-            self.handleRequest(recievedRequest)
+            receivedRequest = data.receivedData(self.socket.recv(1024))
+            self.handleRequest(receivedRequest)
     def sendMessage(self,sendData):
         #This method will send a completed JSON request to the server
         self.socket.send(sendData.encode())
-    def handleRequest(self,recievedRequest):
+    def handleRequest(self,receivedRequest):
         print("Handling request")
-        #Main handler method for when data is recieved from the client
+        #Main handler method for when data is received from the client
         #This will be added to later as more request types are added
-        requestType = recievedRequest.get("requestType")
+        requestType = receivedRequest.get("requestType")
         print("Request type:",requestType)
         if requestType == 0:
-            self.handleNewUser(recievedRequest)
+            self.handleNewUser(receivedRequest)
         if requestType == 4:
-            self.handleMessage(recievedRequest)
+            self.handleMessage(receivedRequest)
         if requestType == 5:
-            self.handleSetUserID(recievedRequest)
-    def handleNewUser(self,recievedRequest):
-        #Sets username attribute to recieved data and prints out information about the new user
-        self.username = recievedRequest.get("username")
+            self.handleSetUserID(receivedRequest)
+    def handleNewUser(self,receivedRequest):
+        #Sets username attribute to received data and prints out information about the new user
+        self.username = receivedRequest.get("username")
         print("New User Connected!")
         print("Host:",self.host)
         print("UserID:",self.userID)
@@ -87,7 +87,7 @@ class Client:
         userIDResponse.append("requestType",1)
         userIDResponse.append("userID",self.userID)
         self.sendMessage(userIDResponse.createJSON())
-    def handleMessage(self,recievedRequest):
+    def handleMessage(self,receivedRequest):
         print("Handling message")
         #This method will forward a message to the recipient
         #This means if required this data can be stored later
@@ -95,16 +95,16 @@ class Client:
         print("Post Get")
         forwardRequest = data.SendData()
         forwardRequest.append("requestType",4)
-        forwardRequest.append("recipientID",recievedRequest.get("recipientID"))
-        forwardRequest.append("senderID",recievedRequest.get("senderID"))
-        forwardRequest.append("messageContent",recievedRequest.get("messageContent"))
-        print("New message to forward to ",recievedRequest.get("recipientID"))
-        allClients.sendMessage(forwardRequest.createJSON(),int(recievedRequest.get("recipientID")))
+        forwardRequest.append("recipientID",receivedRequest.get("recipientID"))
+        forwardRequest.append("senderID",receivedRequest.get("senderID"))
+        forwardRequest.append("messageContent",receivedRequest.get("messageContent"))
+        print("New message to forward to ",receivedRequest.get("recipientID"))
+        allClients.sendMessage(forwardRequest.createJSON(),int(receivedRequest.get("recipientID")))
         self.clientsQueue.put(allClients)
-    def handleSetUserID(self,recievedRequest):
-        #This method will set the userID attribute to the recieved userID
-        print("Updating user ID from",self.userID,"to",recievedRequest.get("userID"))
-        self.newUserID = recievedRequest.get("userID")
+    def handleSetUserID(self,receivedRequest):
+        #This method will set the userID attribute to the received userID
+        print("Updating user ID from",self.userID,"to",receivedRequest.get("userID"))
+        self.newUserID = receivedRequest.get("userID")
         allClients = self.clientsQueue.get()
         allClients.updateUserID(self.userID,self.newUserID)
         self.clientsQueue.put(allClients)

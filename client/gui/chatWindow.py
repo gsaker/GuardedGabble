@@ -175,7 +175,7 @@ class MainWindow(QWidget):
         #get the contents of the chats and add each one to the view
         chatContents = self.currentChatPerson.getChats()
         for chat in chatContents:
-            newChatBubble = ChatBubble(chatContents[chat]["message"], not chatContents[chat]["recieved"])
+            newChatBubble = ChatBubble(chatContents[chat]["message"], not chatContents[chat]["received"])
             self.addWithSpacer(newChatBubble)
         self.scrollArea.setWidget(self.scrollAreaWidget)
 

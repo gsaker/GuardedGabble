@@ -8,7 +8,7 @@ class SendData:
     #Once the request is complete, this method will return the JSON string ready to be sent to the server
     def createJSON(self):
         return json.dumps(self.__requestDict)
-class RecievedData:
+class receivedData:
     def __init__(self, responseString):
         #json.loads() converts a JSON string into a dictionary
         self.__responseDict = json.loads(responseString)

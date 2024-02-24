@@ -21,8 +21,8 @@ class Server:
     def recieveMessage(self):
         #This will run in a seperate thread, loop forever and try and recieve data from the server
         while True:
-            recievedRequest = data.RecievedData(self.socket.recv(1024))
-            self.handleRequest(recievedRequest)
+            receivedRequest = data.receivedData(self.socket.recv(1024))
+            self.handleRequest(receivedRequest)
     def sendData(self,sendData):
         #This method will send a completed JSON request to the server
         self.socket.send(sendData.encode())
@@ -41,19 +41,19 @@ class Server:
         userIDRequest.append("requestType",5)
         userIDRequest.append("userID",userID)
         self.sendData(userIDRequest.createJSON())
-    def handleRequest(self,recievedRequest):
-        #Main handler method for when data is recieved from the server
+    def handleRequest(self,receivedRequest):
+        #Main handler method for when data is received from the server
         #This will be added to later as more request types are added
-        requestType = recievedRequest.get("requestType")
+        requestType = receivedRequest.get("requestType")
         if requestType == 1:
-            self.handleNewUserResponse(recievedRequest)
+            self.handleNewUserResponse(receivedRequest)
         if requestType == 4:
-            self.handleMessageResponse(recievedRequest)
-    def handleNewUserResponse(self,recievedRequest):
+            self.handleMessageResponse(receivedRequest)
+    def handleNewUserResponse(self,receivedRequest):
         #specific handler for a new user response from the server
         #sets userID sent by the server
-        self.userID = recievedRequest.get("userID")
-        print("Recieved userID from server")
+        self.userID = receivedRequest.get("userID")
+        print("received userID from server")
         print("UserID:",self.userID)
     def messageRequest(self,messageContent, recipientID):
         #This method will send a request to the server to send a message to a user
@@ -65,9 +65,9 @@ class Server:
         messageRequest.append("messageContent",messageContent)
         print(recipientID)
         self.sendData(messageRequest.createJSON())
-    def handleMessageResponse(self,recievedRequest):
+    def handleMessageResponse(self,receivedRequest):
         #specific handler for a message response from the server
         #prints out the message content and the sender
-        # print("Message from:",recievedRequest.get("senderID"))
-        # print("Message:",recievedRequest.get("messageContent"))
-        self.app.recievedMessage(recievedRequest.get("senderID"),recievedRequest.get("messageContent"))
+        # print("Message from:",receivedRequest.get("senderID"))
+        # print("Message:",receivedRequest.get("messageContent"))
+        self.app.receivedMessage(receivedRequest.get("senderID"),receivedRequest.get("messageContent"))

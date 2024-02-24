@@ -8,8 +8,8 @@ def startClient(host,port):
     while True:
         sendMessage = input("Client:")
         clientSocket.send(sendMessage.encode())
-        recievedMessage = clientSocket.recv(1024)
-        print("Server:",recievedMessage.decode())
+        receivedMessage = clientSocket.recv(1024)
+        print("Server:",receivedMessage.decode())
     clientSocket.close()
 #In this example we will use the localhost as the server and client
 #Are running on the same machine

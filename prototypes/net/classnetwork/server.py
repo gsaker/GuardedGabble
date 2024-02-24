@@ -9,8 +9,8 @@ class Client:
         self.userID = 
     def recieveMessage(self):
         while True:
-            recievedMessage = self.socket.recv(1024)
-            print("Client:",recievedMessage.decode())
+            receivedMessage = self.socket.recv(1024)
+            print("Client:",receivedMessage.decode())
     def sendMessage(self,sendData):
         self.clientSocket.send(sendData.encode())
 

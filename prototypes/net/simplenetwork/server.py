@@ -11,10 +11,10 @@ def startServer(host,port):
     clientSocket, clientAddress= serverSocket.accept()
     #Loop to keep recieving/sending messages
     while True:
-        #Up to 1024 bytes can be recieved
-        #recievedMessage = clientSocket.recv(1024)
-        #recievedMessage = recievedMessage.decode()
-        #print("Client:", recievedMessage)
+        #Up to 1024 bytes can be received
+        #receivedMessage = clientSocket.recv(1024)
+        #receivedMessage = receivedMessage.decode()
+        #print("Client:", receivedMessage)
         sendMessage = input("Server:")
         clientSocket.send(sendMessage.encode())
     clientSocket.close()

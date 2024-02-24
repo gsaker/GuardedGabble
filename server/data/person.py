@@ -19,14 +19,14 @@ class Person(File):
             super().createObject("userID", self.userID)
             super().createObject("chatID", 0)
             super().createObject("chats", {})
-    def appendChat(self, recievedBool, messageContent):
+    def appendChat(self, receivedBool, messageContent):
         # Append a new chat to the Person object
         self.chatID = super().readObject("chatID")
         date = datetime.datetime.now()
         # Create chat object with date, received status, and message content
         chat = {
             "date": str(date.isoformat()),
-            "recieved": recievedBool,
+            "received": receivedBool,
             "message": messageContent
         }
         # Read chats dictionary from JSON
