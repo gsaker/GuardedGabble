@@ -57,6 +57,8 @@ class App:
         #Print private and public keys for debugging purposes
         print("Private Key:",self.privateKey)
         print("Public Key:",self.publicKey)
+        #Send public key to server
+        self.mainServer.setPublicKeyRequest(self.publicKey)
         #Load people
         self.loadPeople()
         #Create chat window object
@@ -104,6 +106,9 @@ class App:
         self.people[str(senderID)].appendChat(True, messageContent)
         #Emit signal to update chat window in different thread
         self.chatWindow.messageReceived.emit()
+    def recievedPublicKey(self,userID,publicKey):
+        #Add the public key to the person's file
+        self.people[str(userID)].publicKey = publicKey
 if __name__ == "__main__":
     #Displays an error message if the user does not enter an app number
     if len(sys.argv) != 2:

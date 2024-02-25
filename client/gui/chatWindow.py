@@ -178,6 +178,12 @@ class MainWindow(QWidget):
             newChatBubble = ChatBubble(chatContents[chat]["message"], not chatContents[chat]["received"])
             self.addWithSpacer(newChatBubble)
         self.scrollArea.setWidget(self.scrollAreaWidget)
+        # For testing purposes, attempt to get the public key from the server
+        self.app.mainServer.getPublicKeyRequest(self.currentChatPerson.userID)
+        
+
+        
+    
 
 class ChatBubble(QWidget):
     # This class is used to create the chat bubble

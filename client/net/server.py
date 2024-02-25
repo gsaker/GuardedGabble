@@ -41,12 +41,41 @@ class Server:
         userIDRequest.append("requestType",5)
         userIDRequest.append("userID",userID)
         self.sendData(userIDRequest.createJSON())
+    def setPublicKeyRequest(self,publicKey):
+        print("Sending request to set public key")
+        publicKeyRequest = data.SendData()
+        #craft the request using request type 6
+        publicKeyRequest.append("requestType",6)
+        #Need to convert to string to store in JSON
+        publicKeyRequest.append("publicKey",publicKey.decode('utf-8'))
+        self.sendData(publicKeyRequest.createJSON())
+    def getPublicKeyRequest(self,userID):
+        print("Sending request to get public key")
+        publicKeyRequest = data.SendData()
+        #craft the request using request type 2
+        #See design document for more information
+        publicKeyRequest.append("requestType",2)
+        publicKeyRequest.append("userID",userID)
+        self.sendData(publicKeyRequest.createJSON())
+    def handleGetPublicKeyResponse(self,receivedRequest):
+        #Extract the relevant data from the received request and print it out
+        #Need to convert to bytes to use in encryption
+        recievedPublicKey = receivedRequest.get("publicKey").encode('utf-8')
+        recievedUserID = receivedRequest.get("userID")
+        print("Received public key from server")
+        print("Public Key:",recievedPublicKey)
+        print("UserID:",recievedUserID)
+        #Send the public key to the main thread to set it in the correct person object
+        self.app.recievedPublicKey(recievedUserID,recievedPublicKey)
+
     def handleRequest(self,receivedRequest):
         #Main handler method for when data is received from the server
         #This will be added to later as more request types are added
         requestType = receivedRequest.get("requestType")
         if requestType == 1:
             self.handleNewUserResponse(receivedRequest)
+        if requestType == 3:
+            self.handleGetPublicKeyResponse(receivedRequest)
         if requestType == 4:
             self.handleMessageResponse(receivedRequest)
     def handleNewUserResponse(self,receivedRequest):
@@ -68,6 +97,4 @@ class Server:
     def handleMessageResponse(self,receivedRequest):
         #specific handler for a message response from the server
         #prints out the message content and the sender
-        # print("Message from:",receivedRequest.get("senderID"))
-        # print("Message:",receivedRequest.get("messageContent"))
         self.app.receivedMessage(receivedRequest.get("senderID"),receivedRequest.get("messageContent"))

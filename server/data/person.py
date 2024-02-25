@@ -1,17 +1,19 @@
 import datetime
-from file import File
+from data.file import File
 from pathlib import Path
 import os 
 class Person(File):
-    def __init__(self, userID, username):
+    def __init__(self, userID, programName, username=None ):
         # Initialize Person object with userID and username
+        self.programName = programName
         self.userID = userID
         self.username = username
         self.filepath = Path("people/" + self.userID + ".json")
         self.chatID = 0
         self.fullPath = super().getFullPath(self.filepath)
         existed = os.path.isfile(self.fullPath)
-        super().__init__(self.filepath)
+        self.publicKey = None
+        super().__init__(self.filepath, self.programName)
         # If the file does not exist, set initial attributes
         if not existed:
             print("Setting attributes")
@@ -19,6 +21,8 @@ class Person(File):
             super().createObject("userID", self.userID)
             super().createObject("chatID", 0)
             super().createObject("chats", {})
+        else:
+            self.username = super().readObject("username")
     def appendChat(self, receivedBool, messageContent):
         # Append a new chat to the Person object
         self.chatID = super().readObject("chatID")

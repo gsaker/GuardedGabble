@@ -41,6 +41,16 @@ class Clients:
             del self.__clients[oldUserID]
         else:
             print("User with userID"+ str(oldUserID) +"not found.")
+    def getPublicKey(self,userID):
+        #This method will return the public key of a client
+        #Get the client object
+        client = self.__clients.get(userID, None)
+        #If the client exists then return the public key
+        if client:
+            return client.publicKey
+        #Otherwise print an error message
+        else:
+            print("User with userID"+ str(userID) +"not found.")
 
 class Client:
     def __init__(self,socket,host,userID,clientsQueue):
@@ -69,10 +79,14 @@ class Client:
         print("Request type:",requestType)
         if requestType == 0:
             self.handleNewUser(receivedRequest)
+        if requestType == 2:
+            self.handleGetPublicKey(receivedRequest)
         if requestType == 4:
             self.handleMessage(receivedRequest)
         if requestType == 5:
             self.handleSetUserID(receivedRequest)
+        if requestType == 6:
+            self.handleSetPublicKey(receivedRequest)
     def handleNewUser(self,receivedRequest):
         #Sets username attribute to received data and prints out information about the new user
         self.username = receivedRequest.get("username")
@@ -108,9 +122,23 @@ class Client:
         allClients = self.clientsQueue.get()
         allClients.updateUserID(self.userID,self.newUserID)
         self.clientsQueue.put(allClients)
-
-        
-
-
-            
+    def handleSetPublicKey(self,receivedRequest):
+        #This method will set the public key attribute to the received public key
+        #This is highly insecure and will be changed in the future
+        self.publicKey = receivedRequest.get("publicKey").encode('utf-8')
+        print("Public key set to",self.publicKey)
+    def handleGetPublicKey(self,receivedRequest):
+        #This method will send the public key of the requested user to the client
+        userIDToGet = receivedRequest.get("userID")
+        allClients = self.clientsQueue.get()
+        publicKey = allClients.getPublicKey(int(userIDToGet))
+        #Make new response object and send the public key
+        print("Public key to send:",publicKey)
+        publicKeyResponse = data.SendData()
+        publicKeyResponse.append("requestType",3)
+        publicKeyResponse.append("userID",userIDToGet)
+        publicKeyResponse.append("publicKey",publicKey.decode('utf-8'))
+        self.sendMessage(publicKeyResponse.createJSON())
+        #Close the queue so it can be used again
+        self.clientsQueue.put(allClients)
 
