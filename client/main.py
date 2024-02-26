@@ -4,7 +4,7 @@ from net import server
 import threading
 from time import sleep
 from gui import chatWindow
-from data import encrypt
+from net import encrypt
 from PyQt5.QtWidgets import QApplication
 import sys
 #Test data
@@ -96,12 +96,7 @@ class App:
         print("received message from",senderID)
         print("Message:",messageContent)
         print(self.people)
-        #If the sender is not in the people list then add them
-        if senderID not in self.people:
-            print("Adding new person to people list")
-            self.addPerson(str(senderID), str(senderID))
-            #Emit signal to add person to GUI
-            self.chatWindow.addPersonToGUI.emit()
+        self.chatWindow.addPersonToGUI.emit()
         #Add the message to the person's chat history
         self.people[str(senderID)].appendChat(True, messageContent)
         #Emit signal to update chat window in different thread

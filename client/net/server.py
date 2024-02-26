@@ -1,11 +1,16 @@
 import socket
 from . import data
+from . import encrypt
+import base64
+import time
+
 class Server:
     def __init__(self,serverHost,serverPort, app):
         #Setting attributes
         self.app = app
         self.serverPort = serverPort
         self.serverHost = serverHost
+        self.encryptionEnabled = True
     def connectServer(self):
         #Create socket object and try to connect to server, if it fails then return false and print error message
         #If it succeeds then return true and print success message
@@ -21,7 +26,7 @@ class Server:
     def recieveMessage(self):
         #This will run in a seperate thread, loop forever and try and recieve data from the server
         while True:
-            receivedRequest = data.receivedData(self.socket.recv(1024))
+            receivedRequest = data.receivedData(self.socket.recv(2048))
             self.handleRequest(receivedRequest)
     def sendData(self,sendData):
         #This method will send a completed JSON request to the server
@@ -84,17 +89,62 @@ class Server:
         self.userID = receivedRequest.get("userID")
         print("received userID from server")
         print("UserID:",self.userID)
-    def messageRequest(self,messageContent, recipientID):
-        #This method will send a request to the server to send a message to a user
-        messageRequest = data.SendData()
-        #craft the request using request type 2 as described in the design section
-        messageRequest.append("requestType",4)
-        messageRequest.append("recipientID",recipientID)
-        messageRequest.append("senderID",self.userID)
-        messageRequest.append("messageContent",messageContent)
-        print(recipientID)
-        self.sendData(messageRequest.createJSON())
+    def messageRequest(self,messageContent, recipientID, publicKey):
+        if self.encryptionEnabled==False:
+            #This method will send a request to the server to send a message to a user
+            messageRequest = data.SendData()
+            #craft the request using request type 2 as described in the design section
+            messageRequest.append("requestType",4)
+            messageRequest.append("recipientID",recipientID)
+            messageRequest.append("senderID",self.userID)
+            messageRequest.append("messageContent",messageContent)
+            print(recipientID)
+            self.sendData(messageRequest.createJSON())
+        else:
+            print("Message:",messageContent)
+            print("Recipient:",recipientID)
+            encryptedContent = encrypt.encryptMessage(messageContent, self.app.people[recipientID].publicKey)
+            print("Encrypted message:",encryptedContent)
+            signature = encrypt.signMessage(messageContent,self.app.privateKey)
+            print("Signature:",signature)
+            encryptedContentBase64 = base64.b64encode(encryptedContent).decode('utf-8')
+            signatureBase64 = base64.b64encode(signature).decode('utf-8')
+            print("Encrypted message base64:",encryptedContentBase64)
+            print("Signature base64:",signatureBase64)
+            messageRequest = data.SendData()
+            messageRequest.append("requestType",4)
+            messageRequest.append("recipientID",recipientID)
+            messageRequest.append("senderID",self.userID)
+            messageRequest.append("messageContent",encryptedContentBase64)
+            messageRequest.append("signature",signatureBase64)
+            messageRequest.append("senderPublicKey",publicKey.decode('utf-8'))
+            # messageRequest.append("senderPublicKey",base64.b64encode(publicKey).decode('utf-8'))
+            print("Sending message request")
+            self.sendData(messageRequest.createJSON())
+
     def handleMessageResponse(self,receivedRequest):
-        #specific handler for a message response from the server
-        #prints out the message content and the sender
-        self.app.receivedMessage(receivedRequest.get("senderID"),receivedRequest.get("messageContent"))
+        if receivedRequest.get("senderID") not in self.app.people:
+            print("Adding new person to people list")
+            self.app.addPerson(str(receivedRequest.get("senderID")), str(receivedRequest.get("senderID")))
+        if self.encryptionEnabled==False:
+            #specific handler for a message response from the server
+            #prints out the message content and the sender
+            self.app.receivedMessage(receivedRequest.get("senderID"),receivedRequest.get("messageContent"))
+        else:
+            self.getPublicKeyRequest(str(receivedRequest.get("senderID")))
+            time.sleep(0.5)
+            encryptedContentBase64 = receivedRequest.get("messageContent")
+            signatureBase64 = receivedRequest.get("signature")
+            encryptedContent = base64.b64decode(encryptedContentBase64)
+            signature = base64.b64decode(signatureBase64)
+            print("Received encrypted message:",encryptedContent)
+            print("Received signature:",signature)
+            decryptedContent = encrypt.decryptMessage(encryptedContent,self.app.privateKey)
+            print("Decrypted message:",decryptedContent)
+            print("Verifying signature")
+            verified = encrypt.verifySignature(decryptedContent,signature,receivedRequest.get("senderPublicKey").encode('utf-8'))
+            print("Signature verified:",verified)
+            if verified:
+                self.app.receivedMessage(str(receivedRequest.get("senderID")),decryptedContent.decode('utf-8'))
+            else:
+                print("Signature not verified")

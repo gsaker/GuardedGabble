@@ -2,7 +2,7 @@ from . import data
 
 import sys
 sys.path.append(".")
-
+encryptionEnabled = True
 class Clients:
     #This class will hold all the clients connected to the server
     #Clients can only be added or removed from this class due to the attribute being private
@@ -66,7 +66,7 @@ class Client:
         #Will run in seperate thread
         while True:
             #Keep trying to recieve data from the client
-            receivedRequest = data.receivedData(self.socket.recv(1024))
+            receivedRequest = data.receivedData(self.socket.recv(2048))
             self.handleRequest(receivedRequest)
     def sendMessage(self,sendData):
         #This method will send a completed JSON request to the server
@@ -106,12 +106,15 @@ class Client:
         #This method will forward a message to the recipient
         #This means if required this data can be stored later
         allClients = self.clientsQueue.get()
-        print("Post Get")
         forwardRequest = data.SendData()
         forwardRequest.append("requestType",4)
         forwardRequest.append("recipientID",receivedRequest.get("recipientID"))
         forwardRequest.append("senderID",receivedRequest.get("senderID"))
         forwardRequest.append("messageContent",receivedRequest.get("messageContent"))
+        if encryptionEnabled:
+            #Add the signature to the message if encryption is enabled
+            forwardRequest.append("signature",receivedRequest.get("signature"))
+            forwardRequest.append("senderPublicKey",receivedRequest.get("senderPublicKey"))
         print("New message to forward to ",receivedRequest.get("recipientID"))
         allClients.sendMessage(forwardRequest.createJSON(),int(receivedRequest.get("recipientID")))
         self.clientsQueue.put(allClients)
@@ -128,17 +131,23 @@ class Client:
         self.publicKey = receivedRequest.get("publicKey").encode('utf-8')
         print("Public key set to",self.publicKey)
     def handleGetPublicKey(self,receivedRequest):
-        #This method will send the public key of the requested user to the client
-        userIDToGet = receivedRequest.get("userID")
-        allClients = self.clientsQueue.get()
-        publicKey = allClients.getPublicKey(int(userIDToGet))
-        #Make new response object and send the public key
-        print("Public key to send:",publicKey)
-        publicKeyResponse = data.SendData()
-        publicKeyResponse.append("requestType",3)
-        publicKeyResponse.append("userID",userIDToGet)
-        publicKeyResponse.append("publicKey",publicKey.decode('utf-8'))
-        self.sendMessage(publicKeyResponse.createJSON())
-        #Close the queue so it can be used again
-        self.clientsQueue.put(allClients)
+        try:
+            print(receivedRequest)
+            #This method will send the public key of the requested user to the client
+            userIDToGet = receivedRequest.get("userID")
+            allClients = self.clientsQueue.get()
+            publicKey = allClients.getPublicKey(int(userIDToGet))
+            #Make new response object and send the public key
+            print("Public key to send:",publicKey)
+            publicKeyResponse = data.SendData()
+            publicKeyResponse.append("requestType",3)
+            publicKeyResponse.append("userID",userIDToGet)
+            publicKeyResponse.append("publicKey",publicKey.decode('utf-8'))
+            self.sendMessage(publicKeyResponse.createJSON())
+            #Close the queue so it can be used again
+            self.clientsQueue.put(allClients)
+        except AttributeError:
+            print("User with userID",userIDToGet,"not found.")
+            self.clientsQueue.put(allClients)
+            return
 
