@@ -1,14 +1,24 @@
 from . import data
-
+from data import person
 import sys
 sys.path.append(".")
 encryptionEnabled = True
+saveMessages = True
 class Clients:
     #This class will hold all the clients connected to the server
     #Clients can only be added or removed from this class due to the attribute being private
     #This means the code will be more reliable as the clients attribute can only be changed by the methods in this class
     def __init__(self):
         self.__clients = {}
+        #Create a people file object
+        self.peopleFile = person.File("people.json", "server")
+        #If this is the first time the server has been run then perform first time setup
+        if self.peopleFile.newFile:
+            print("First time setup")
+            #Create the people array inside the people file
+            self.peopleFile.createObject("people", [])
+        #Load the people array from the people file
+        self.loadPeople()
     def addClient(self,client):
         print("New client added")
         print("UserID:",client.userID)
@@ -51,6 +61,27 @@ class Clients:
         #Otherwise print an error message
         else:
             print("User with userID"+ str(userID) +"not found.")
+    def loadPeople(self):
+        #load list of people
+        peopleArray = self.peopleFile.readObject("people")
+        self.people = {}
+        #Create a person object for each person in the people array
+        for eachPerson in peopleArray:
+            newPersonFile = person.Person(eachPerson, "server")
+            self.people[eachPerson] = newPersonFile
+    def addPerson(self, userID, username):
+        #check if person already exists
+        if userID in self.people:
+            print("Person already exists")
+            return
+        #Add a person to the people list
+        newPersonFile = person.Person(userID, "server" ,username)
+        self.people[userID] = newPersonFile
+        self.peopleFile.appendObject("people",userID)
+    def saveMessage(self,senderID,messageContent):
+        #This method will save a message to the sender's file
+        self.people[senderID].appendChat(False, messageContent)
+        
 
 class Client:
     def __init__(self,socket,host,userID,clientsQueue):
@@ -115,9 +146,17 @@ class Client:
             #Add the signature to the message if encryption is enabled
             forwardRequest.append("signature",receivedRequest.get("signature"))
             forwardRequest.append("senderPublicKey",receivedRequest.get("senderPublicKey"))
+        #If encryption is not enabled and saveMessages is true then save the message
+        if not encryptionEnabled and saveMessages:
+            print("Saving message")
+            #Add a new person, if they already exists the 
+            #addPerson method will do nothing and print a message
+            allClients.addPerson(receivedRequest.get("senderID"), receivedRequest.get("senderID"))
+            allClients.saveMessage(receivedRequest.get("senderID"),receivedRequest.get("messageContent"))
         print("New message to forward to ",receivedRequest.get("recipientID"))
         allClients.sendMessage(forwardRequest.createJSON(),int(receivedRequest.get("recipientID")))
         self.clientsQueue.put(allClients)
+
     def handleSetUserID(self,receivedRequest):
         #This method will set the userID attribute to the received userID
         print("Updating user ID from",self.userID,"to",receivedRequest.get("userID"))

@@ -16,6 +16,7 @@ class App:
         self.serverPort = 64147
         self.username = "User1"
         self.appNo = appNo
+        self.encryptionEnabled = True
         #Create config and people file object
         self.configFile = file.File("config.json", self.appNo)
         self.peopleFile = file.File("people.json", self.appNo)
@@ -34,11 +35,12 @@ class App:
             sleep(0.5)
             self.configFile.createObject("userID", self.mainServer.userID)
             self.peopleFile.createObject("people", [])
-            #Generate keys and store them in the config file
-            self.privateKey, self.publicKey = encrypt.generateKeys()
-            #Need to convert to string to store in JSON
-            self.configFile.createObject("privateKey", self.privateKey.decode('utf-8'))
-            self.configFile.createObject("publicKey", self.publicKey.decode('utf-8'))
+            if self.encryptionEnabled:
+                #Generate keys and store them in the config file
+                self.privateKey, self.publicKey = encrypt.generateKeys()
+                #Need to convert to string to store in JSON
+                self.configFile.createObject("privateKey", self.privateKey.decode('utf-8'))
+                self.configFile.createObject("publicKey", self.publicKey.decode('utf-8'))
         else:
             #If config file exists then load data from it
             print("Loading config file")
@@ -49,16 +51,15 @@ class App:
             self.mainServer.setUserIDRequest(self.configFile.readObject("userID"))
             #Load keys from config file
             #Need to convert to bytes to use in encryption
-            self.privateKey = self.configFile.readObject("privateKey").encode('utf-8')
-            self.publicKey = self.configFile.readObject("publicKey").encode('utf-8')
+            if self.encryptionEnabled:
+                self.privateKey = self.configFile.readObject("privateKey").encode('utf-8')
+                self.publicKey = self.configFile.readObject("publicKey").encode('utf-8')
         #Set stored userID
         self.userID = self.configFile.readObject("userID")
         self.mainServer.userID = self.userID
-        #Print private and public keys for debugging purposes
-        print("Private Key:",self.privateKey)
-        print("Public Key:",self.publicKey)
-        #Send public key to server
-        self.mainServer.setPublicKeyRequest(self.publicKey)
+        if self.encryptionEnabled:
+            #Send public key to server
+            self.mainServer.setPublicKeyRequest(self.publicKey)
         #Load people
         self.loadPeople()
         #Create chat window object

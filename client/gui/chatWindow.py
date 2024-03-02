@@ -150,8 +150,10 @@ class MainWindow(QWidget):
         newChatBubble = ChatBubble(message, True)
         self.addWithSpacer(newChatBubble)
         self.currentChatPerson.appendChat(False, message)
-        self.app.mainServer.messageRequest(message, self.currentChatPerson.userID,self.app.publicKey)
-        
+        if self.app.encryptionEnabled:
+            self.app.mainServer.messageRequest(message, self.currentChatPerson.userID,self.app.publicKey)
+        else:
+            self.app.mainServer.messageRequest(message, self.currentChatPerson.userID)
     def addWithSpacer(self,item):
         self.scrollAreaLayout.removeItem(self.spacerItem)
         self.scrollAreaLayout.addWidget(item)

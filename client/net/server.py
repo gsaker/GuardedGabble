@@ -10,7 +10,7 @@ class Server:
         self.app = app
         self.serverPort = serverPort
         self.serverHost = serverHost
-        self.encryptionEnabled = True
+        self.encryptionEnabled = self.app.encryptionEnabled
     def connectServer(self):
         #Create socket object and try to connect to server, if it fails then return false and print error message
         #If it succeeds then return true and print success message
@@ -89,14 +89,14 @@ class Server:
         self.userID = receivedRequest.get("userID")
         print("received userID from server")
         print("UserID:",self.userID)
-    def messageRequest(self,messageContent, recipientID, publicKey):
+    def messageRequest(self,messageContent, recipientID, publicKey=None):
         if self.encryptionEnabled==False:
             #This method will send a request to the server to send a message to a user
             messageRequest = data.SendData()
             #craft the request using request type 4 as described in the design section
             messageRequest.append("requestType",4)
             messageRequest.append("recipientID",recipientID)
-            messageRequest.append("senderID",self.userID)
+            messageRequest.append("senderID",str(self.userID))
             messageRequest.append("messageContent",messageContent)
             print(recipientID)
             self.sendData(messageRequest.createJSON())
