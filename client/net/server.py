@@ -93,7 +93,7 @@ class Server:
         if self.encryptionEnabled==False:
             #This method will send a request to the server to send a message to a user
             messageRequest = data.SendData()
-            #craft the request using request type 2 as described in the design section
+            #craft the request using request type 4 as described in the design section
             messageRequest.append("requestType",4)
             messageRequest.append("recipientID",recipientID)
             messageRequest.append("senderID",self.userID)
@@ -101,24 +101,31 @@ class Server:
             print(recipientID)
             self.sendData(messageRequest.createJSON())
         else:
+            #We have included lots of debug print statements to show 
+            #the process of encrypting and decrypting messages
             print("Message:",messageContent)
             print("Recipient:",recipientID)
+            #Encrypt the message using the recipient's public key
             encryptedContent = encrypt.encryptMessage(messageContent, self.app.people[recipientID].publicKey)
             print("Encrypted message:",encryptedContent)
+            #Sign the message using the sender's private key
             signature = encrypt.signMessage(messageContent,self.app.privateKey)
             print("Signature:",signature)
+            #Convert the encrypted message and signature to base64 so they can be sent in a JSON request
             encryptedContentBase64 = base64.b64encode(encryptedContent).decode('utf-8')
             signatureBase64 = base64.b64encode(signature).decode('utf-8')
             print("Encrypted message base64:",encryptedContentBase64)
             print("Signature base64:",signatureBase64)
+            #Craft the request using request type 4 as described in the design section
             messageRequest = data.SendData()
             messageRequest.append("requestType",4)
             messageRequest.append("recipientID",recipientID)
             messageRequest.append("senderID",self.userID)
             messageRequest.append("messageContent",encryptedContentBase64)
             messageRequest.append("signature",signatureBase64)
+            # For now we will send the sender public key with the message request 
+            #but in the future this will be requested from the server for security reasons
             messageRequest.append("senderPublicKey",publicKey.decode('utf-8'))
-            # messageRequest.append("senderPublicKey",base64.b64encode(publicKey).decode('utf-8'))
             print("Sending message request")
             self.sendData(messageRequest.createJSON())
 
@@ -131,20 +138,24 @@ class Server:
             #prints out the message content and the sender
             self.app.receivedMessage(receivedRequest.get("senderID"),receivedRequest.get("messageContent"))
         else:
-            self.getPublicKeyRequest(str(receivedRequest.get("senderID")))
-            time.sleep(0.5)
+            #We have included lots of debug print statements to show whats going on
             encryptedContentBase64 = receivedRequest.get("messageContent")
             signatureBase64 = receivedRequest.get("signature")
+            #Convert the base64 encoded encrypted message and signature back to bytes
             encryptedContent = base64.b64decode(encryptedContentBase64)
             signature = base64.b64decode(signatureBase64)
             print("Received encrypted message:",encryptedContent)
             print("Received signature:",signature)
+            #Decrypt the message using the recipient's private key
             decryptedContent = encrypt.decryptMessage(encryptedContent,self.app.privateKey)
             print("Decrypted message:",decryptedContent)
             print("Verifying signature")
+            #Verify the signature using the sender's public key
             verified = encrypt.verifySignature(decryptedContent,signature,receivedRequest.get("senderPublicKey").encode('utf-8'))
             print("Signature verified:",verified)
+            # If the signature is verified then print out the message content and the sender
             if verified:
                 self.app.receivedMessage(str(receivedRequest.get("senderID")),decryptedContent.decode('utf-8'))
+            # Otherwise the message may have been tampered with
             else:
                 print("Signature not verified")

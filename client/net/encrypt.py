@@ -29,10 +29,12 @@ def generateKeys():
     return pemPrivate, pemPublic
 
 def encryptMessage(message, recipientPublicKeyPEM):
+    # Load the public key from the PEM file
     recipientPublicKey = serialization.load_pem_public_key(
         recipientPublicKeyPEM,
         backend=default_backend()
     )
+    # Encrypt the message using the public key
     encrypted = recipientPublicKey.encrypt(
         message.encode(),
         padding.OAEP(
@@ -44,11 +46,13 @@ def encryptMessage(message, recipientPublicKeyPEM):
     return encrypted
 
 def signMessage(message, senderPrivateKeyPEM):
+    # Load the private key from the PEM file
     senderPrivateKey = serialization.load_pem_private_key(
         senderPrivateKeyPEM,
         password=None,
         backend=default_backend()
     )
+    # Sign the message using the private key
     signature = senderPrivateKey.sign(
         message.encode(),
         padding.PSS(
@@ -59,11 +63,13 @@ def signMessage(message, senderPrivateKeyPEM):
     )
     return signature
 def decryptMessage(encryptedMessage, recipientPrivateKeyPEM):
+    # Load the private key from the PEM file
     recipientPrivateKey = serialization.load_pem_private_key(
         recipientPrivateKeyPEM,
         password=None,
         backend=default_backend()
     )
+    # Decrypt the message using the private key
     return recipientPrivateKey.decrypt(
         encryptedMessage,
         padding.OAEP(
@@ -74,7 +80,9 @@ def decryptMessage(encryptedMessage, recipientPrivateKeyPEM):
     )
 def verifySignature(message, signature, senderPublicKeyPEM):
     try:
+        # Load the public key from the PEM file
         senderPublicKey = serialization.load_pem_public_key(senderPublicKeyPEM)
+        # Verify the signature using the public key
         senderPublicKey.verify(
             signature,
             message,
@@ -84,6 +92,8 @@ def verifySignature(message, signature, senderPublicKeyPEM):
             ),
             hashes.SHA256()
         )
+        # If the signature is valid, return True
         return True
+    # If the signature is invalid, return False
     except InvalidSignature:
         return False
