@@ -181,11 +181,10 @@ class MainWindow(QWidget):
             self.addWithSpacer(newChatBubble)
         self.scrollArea.setWidget(self.scrollAreaWidget)
         # For testing purposes, attempt to get the public key from the server
-        self.app.mainServer.getPublicKeyRequest(self.currentChatPerson.userID)
+        if self.app.encryptionEnabled:
+            self.app.mainServer.getPublicKeyRequest(self.currentChatPerson.userID)
         
 
-        
-    
 
 class ChatBubble(QWidget):
     # This class is used to create the chat bubble

@@ -3,13 +3,14 @@ from data.file import File
 from pathlib import Path
 import os 
 class Person(File):
-    def __init__(self, userID, programName, username=None ):
+    def __init__(self, userID, programName, username=None):
         # Initialize Person object with userID and username
         self.programName = programName
         self.userID = userID
         self.username = username
         self.filepath = Path("people/" + self.userID + ".json")
         self.chatID = 0
+        self.bufferID = 0
         self.fullPath = super().getFullPath(self.filepath)
         existed = os.path.isfile(self.fullPath)
         self.publicKey = None
@@ -20,7 +21,9 @@ class Person(File):
             super().createObject("username", self.username)
             super().createObject("userID", self.userID)
             super().createObject("chatID", 0)
+            super().createObject("bufferID", 0)
             super().createObject("chats", {})
+            super().createObject("buffer",{})
         else:
             self.username = super().readObject("username")
     def appendChat(self, receivedBool, messageContent):
@@ -42,6 +45,30 @@ class Person(File):
         # Increment chatID
         self.chatID += 1
         super().createObject("chatID", self.chatID)
+    def appendBuffer(self, recievedRequest):
+        # Get the current bufferID and buffer from the Person object
+        self.bufferID = super().readObject("bufferID")
+        buffer = super().readObject("buffer")
+        # Get the dictionary from the recieved request
+        # Since we can't store the request object we get the ditionary instead
+        recievedDict = recievedRequest.getDict()
+        print(recievedDict)
+        # Add the dictionary to the buffer
+        buffer[self.bufferID] = recievedDict
+        # Write the updated buffer back to the JSON
+        super().createObject("buffer", buffer)
+        # Increment the bufferID
+        self.bufferID += 1
+        # Store the increment bufferID back to the JSON
+        super().createObject("bufferID", self.bufferID)
+    def clearBuffer(self):
+        # Clear the buffer by setting it to an empty dictionary
+        super().createObject("buffer", {})
+        # Reset the bufferID to 0
+        super().createObject("bufferID", 0)
+    def getBuffers(self):
+        # Retrieve the buffer from the Person object
+        return super().readObject("buffer")
     def getChat(self, chatID):
         # Retrieve a specific chat from the Person object
         return super().readObject(["chats"][int(chatID)])

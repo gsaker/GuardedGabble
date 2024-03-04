@@ -15,3 +15,5 @@ class receivedData:
         self.__responseDict = json.loads(responseString)
     def get(self, key):
         return self.__responseDict[key]
+    def getDict(self):
+        return self.__responseDict

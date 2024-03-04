@@ -16,7 +16,7 @@ class App:
         self.serverPort = 64147
         self.username = "User1"
         self.appNo = appNo
-        self.encryptionEnabled = True
+        self.encryptionEnabled = False
         #Create config and people file object
         self.configFile = file.File("config.json", self.appNo)
         self.peopleFile = file.File("people.json", self.appNo)
@@ -60,6 +60,7 @@ class App:
         if self.encryptionEnabled:
             #Send public key to server
             self.mainServer.setPublicKeyRequest(self.publicKey)
+            sleep(0.5)
         #Load people
         self.loadPeople()
         #Create chat window object

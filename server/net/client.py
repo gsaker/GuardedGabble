@@ -1,8 +1,9 @@
 from . import data
 from data import person
 import sys
+import time
 sys.path.append(".")
-encryptionEnabled = True
+encryptionEnabled = False
 saveMessages = True
 class Clients:
     #This class will hold all the clients connected to the server
@@ -24,7 +25,8 @@ class Clients:
         print("UserID:",client.userID)
         self.__clients[client.userID] = client
     def removeClient(self,client):
-        self.__clients.pop(client.host)
+        print(client.userID,"disconnected")
+        self.__clients.pop(client.userID)
     def sendMessage(self,sendData,userID):
         print(self.__clients)
         #Checks if client exists in the dictionary, if it does then send the message
@@ -34,6 +36,13 @@ class Clients:
             client.sendMessage(sendData)
         else:
             print(f"User with userID {userID} not found.")
+    def clientConnected(self,userID):
+        #This method will return true if the client is connected
+        client = self.__clients.get(userID, None)
+        if client:
+            return True
+        else:
+            return False
     def outputClients(self):
         print(self.__clients)
     def updateUserID(self,oldUserID,newUserID):
@@ -81,6 +90,15 @@ class Clients:
     def saveMessage(self,senderID,messageContent):
         #This method will save a message to the sender's file
         self.people[senderID].appendChat(False, messageContent)
+    def addToBuffer(self,recipientID,messageContent):
+        #This method will add a message to the buffer
+        self.people[recipientID].appendBuffer(messageContent)
+    def getBuffers(self,userID):
+        #This method will return the buffer of a user
+        return self.people[userID].getBuffers()
+    def clearBuffer(self,userID):
+        #This method will clear the buffer of a user
+        self.people[userID].clearBuffer()
         
 
 class Client:
@@ -93,31 +111,48 @@ class Client:
         self.userID = userID
         #clientsQueue is a queue object that will be used to store the clients dictionary
         self.clientsQueue = clientsQueue
+        self.active = True
     def recieveMessage(self):
         #Will run in seperate thread
-        while True:
+        while self.active:
             #Keep trying to recieve data from the client
-            receivedRequest = data.receivedData(self.socket.recv(2048))
+            receivedRequestRaw = self.socket.recv(2048)
+            try:
+                receivedRequest= data.receivedData(receivedRequestRaw)
+            except Exception as e:
+                #If an error occurs then we can assume the client has 
+                #disconnected/errored so remove them from the server
+                #Print the error for debugging
+                print("Error:",e)
+                allClients = self.clientsQueue.get()
+                #Remove the client from the dictionary
+                allClients.removeClient(self)
+                self.clientsQueue.put(allClients)
+                #stopping the recieve loop
+                self.active = False
+                #Close the socket
+                self.socket.close()
             self.handleRequest(receivedRequest)
     def sendMessage(self,sendData):
         #This method will send a completed JSON request to the server
         self.socket.send(sendData.encode())
     def handleRequest(self,receivedRequest):
-        print("Handling request")
-        #Main handler method for when data is received from the client
-        #This will be added to later as more request types are added
-        requestType = receivedRequest.get("requestType")
-        print("Request type:",requestType)
-        if requestType == 0:
-            self.handleNewUser(receivedRequest)
-        if requestType == 2:
-            self.handleGetPublicKey(receivedRequest)
-        if requestType == 4:
-            self.handleMessage(receivedRequest)
-        if requestType == 5:
-            self.handleSetUserID(receivedRequest)
-        if requestType == 6:
-            self.handleSetPublicKey(receivedRequest)
+        if self.active:
+            print("Handling request")
+            #Main handler method for when data is received from the client
+            #This will be added to later as more request types are added
+            requestType = receivedRequest.get("requestType")
+            print("Request type:",requestType)
+            if requestType == 0:
+                self.handleNewUser(receivedRequest)
+            if requestType == 2:
+                self.handleGetPublicKey(receivedRequest)
+            if requestType == 4:
+                self.handleMessage(receivedRequest)
+            if requestType == 5:
+                self.handleSetUserID(receivedRequest)
+            if requestType == 6:
+                self.handleSetPublicKey(receivedRequest)
     def handleNewUser(self,receivedRequest):
         #Sets username attribute to received data and prints out information about the new user
         self.username = receivedRequest.get("username")
@@ -126,18 +161,36 @@ class Client:
         print("UserID:",self.userID)
         print("Username:",self.username)
         self.newUserResponse()
+        
+
     def newUserResponse(self):
         #This method will send a response to the client with their userID generated by the server
         userIDResponse = data.SendData()
         userIDResponse.append("requestType",1)
         userIDResponse.append("userID",self.userID)
         self.sendMessage(userIDResponse.createJSON())
+
     def handleMessage(self,receivedRequest):
         print("Handling message")
         #This method will forward a message to the recipient
         #This means if required this data can be stored later
         allClients = self.clientsQueue.get()
         forwardRequest = data.SendData()
+        #Check if recipient is connected
+        #If not then place the message in the buffer
+        if not allClients.clientConnected(int(receivedRequest.get("recipientID"))):
+            #Debug print statements
+            print("User with userID",receivedRequest.get("recipientID"),"not found.")
+            print("Placing in buffer")
+            print("People",allClients.people)
+            #Add person if they do not already exist
+            #If they do then the addPerson method will do nothing and print a message
+            allClients.addPerson(receivedRequest.get("recipientID"), receivedRequest.get("recipientID"))
+            #Add the entire request to the recipient buffer
+            allClients.addToBuffer(receivedRequest.get("recipientID"),receivedRequest)
+            print("Buffer:",allClients.getBuffers(receivedRequest.get("recipientID")))
+            self.clientsQueue.put(allClients)
+            return
         forwardRequest.append("requestType",4)
         forwardRequest.append("recipientID",receivedRequest.get("recipientID"))
         forwardRequest.append("senderID",receivedRequest.get("senderID"))
@@ -151,19 +204,34 @@ class Client:
             print("Saving message")
             #Add a new person, if they already exists the 
             #addPerson method will do nothing and print a message
-            allClients.addPerson(receivedRequest.get("senderID"), receivedRequest.get("senderID"))
-            allClients.saveMessage(receivedRequest.get("senderID"),receivedRequest.get("messageContent"))
+            allClients.addPerson(receivedRequest.get("recipientID"), receivedRequest.get("recipientID"))
+            allClients.saveMessage(receivedRequest.get("recipientID"),receivedRequest.get("messageContent"))
         print("New message to forward to ",receivedRequest.get("recipientID"))
         allClients.sendMessage(forwardRequest.createJSON(),int(receivedRequest.get("recipientID")))
         self.clientsQueue.put(allClients)
-
     def handleSetUserID(self,receivedRequest):
         #This method will set the userID attribute to the received userID
         print("Updating user ID from",self.userID,"to",receivedRequest.get("userID"))
         self.newUserID = receivedRequest.get("userID")
         allClients = self.clientsQueue.get()
         allClients.updateUserID(self.userID,self.newUserID)
+        buffer = allClients.getBuffers(str(self.userID))
         self.clientsQueue.put(allClients)
+        #Wait for client to launch the GUI
+        time.sleep(1)
+        self.sendBuffer(buffer,allClients)
+    def sendBuffer(self, buffer, allClients):
+        #This method will send the buffer to the client
+        #Iterate through each request stored in the buffer
+        for item in buffer.items():
+            time.sleep(0.1)
+            #Print out the request for debugging
+            print("Item:",item[1])
+            #Send the request to the client
+            self.handleMessage(item[1])
+        allClients.clearBuffer(str(self.userID))
+        self.clientsQueue.put(allClients)
+
     def handleSetPublicKey(self,receivedRequest):
         #This method will set the public key attribute to the received public key
         #This is highly insecure and will be changed in the future
@@ -171,7 +239,7 @@ class Client:
         print("Public key set to",self.publicKey)
     def handleGetPublicKey(self,receivedRequest):
         try:
-            print(receivedRequest)
+            print(receivedRequest.getDict())
             #This method will send the public key of the requested user to the client
             userIDToGet = receivedRequest.get("userID")
             allClients = self.clientsQueue.get()
@@ -188,5 +256,12 @@ class Client:
         except AttributeError:
             print("User with userID",userIDToGet,"not found.")
             self.clientsQueue.put(allClients)
+            publicKeyResponse = data.SendData()
+            publicKeyResponse.append("requestType",3)
+            publicKeyResponse.append("userID",userIDToGet)
+            publicKeyResponse.append("publicKey","None")
+            self.sendMessage(publicKeyResponse.createJSON())
+            #Close the queue so it can be used again
+            self.clientsQueue.put(allClients)
             return
-
+        
