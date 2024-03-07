@@ -11,6 +11,7 @@ class SendData:
 class receivedData:
     def __init__(self, responseString):
         #json.loads() converts a JSON string into a dictionary
+        print("Received data:",responseString)
         self.__responseDict = json.loads(responseString)
     def get(self, key):
         return self.__responseDict[key]

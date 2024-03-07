@@ -20,6 +20,7 @@ class Person(File):
             print("Setting attributes")
             super().createObject("username", self.username)
             super().createObject("userID", self.userID)
+            super().createObject("publicKey", None)
             super().createObject("chatID", 0)
             super().createObject("bufferID", 0)
             super().createObject("chats", {})
@@ -74,5 +75,9 @@ class Person(File):
         return super().readObject(["chats"][int(chatID)])
     def getChats(self):
         return super().readObject("chats")
+    def getPublicKey(self):
+        return super().readObject("publicKey")
+    def setPublicKey(self, publicKey):
+        super().createObject("publicKey", publicKey)
     def readJSON(self):
         return super().readJSON()

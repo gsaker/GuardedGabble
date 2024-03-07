@@ -10,6 +10,7 @@ class Person(File):
         self.username = username
         self.filepath = Path("people/" + self.userID + ".json")
         self.chatID = 0
+        self.publicKey = None
         self.fullPath = super().getFullPath(self.filepath)
         existed = os.path.isfile(self.fullPath)
         super().__init__(self.filepath, self.programName)

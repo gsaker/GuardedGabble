@@ -5,6 +5,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from qdarkstyle import load_stylesheet_pyqt5
 from PyQt5.QtWidgets import QInputDialog
+from gui import helpWindow
+from gui import settingsWindow
 class MainWindow(QWidget):
     messageReceived = pyqtSignal()
     addPersonToGUI = pyqtSignal()
@@ -46,9 +48,16 @@ class MainWindow(QWidget):
         self.sendButton = QPushButton('Send')
         self.sendButton.clicked.connect(lambda _,: self.sendMessage())
         self.settingButton = QPushButton('Settings')
+        #connect settings button to open settings window
+        self.settingButton.clicked.connect(lambda _: self.openSettingsWindow())
         self.idButton = QPushButton(str(self.app.userID))
         self.quitButton = QPushButton('Quit')
+        #connect quit button to stop the application
+        self.quitButton.clicked.connect(lambda _: self.app.stop())
         self.helpButton = QPushButton('Help')
+        #connect help button to open help window
+        self.helpButton.clicked.connect(lambda _: self.openHelpWindow())
+
 
         #create layouts
         self.buttonLayout = QHBoxLayout()
@@ -181,9 +190,14 @@ class MainWindow(QWidget):
             self.addWithSpacer(newChatBubble)
         self.scrollArea.setWidget(self.scrollAreaWidget)
         # For testing purposes, attempt to get the public key from the server
-        if self.app.encryptionEnabled:
+        if self.app.encryptionEnabled and self.currentChatPerson.publicKey == None:
             self.app.mainServer.getPublicKeyRequest(self.currentChatPerson.userID)
-        
+    def openHelpWindow(self):
+        self.helpWindow = helpWindow.HelpWindow()
+        self.helpWindow.show()
+    def openSettingsWindow(self):
+        self.settingsWindow = settingsWindow.SettingsWindow(self.app)
+        self.settingsWindow.show()
 
 
 class ChatBubble(QWidget):

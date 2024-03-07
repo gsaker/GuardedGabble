@@ -7,6 +7,7 @@ from gui import chatWindow
 from net import encrypt
 from PyQt5.QtWidgets import QApplication
 import sys
+import os
 #Test data
 class App:
     def __init__(self, appNo):
@@ -16,13 +17,13 @@ class App:
         self.serverPort = 64147
         self.username = "User1"
         self.appNo = appNo
-        self.encryptionEnabled = False
+        self.encryptionEnabled = True
         #Create config and people file object
         self.configFile = file.File("config.json", self.appNo)
         self.peopleFile = file.File("people.json", self.appNo)
-        #Connect to server
-        self.connectServer()
         if self.configFile.newFile:
+            #Connect to server before creating config file
+            self.connectServer()
             print("First time setup")
             print("Creating config file")
             #At this point as this is the first time opening the app, we need to run the first time setup
@@ -45,7 +46,11 @@ class App:
             #If config file exists then load data from it
             print("Loading config file")
             self.serverHost = self.configFile.readObject("server")
-            self.serverPort = self.configFile.readObject("port")
+            self.serverPort = int(self.configFile.readObject("port"))
+            print("Server:",self.serverHost)
+            print("Port:",self.serverPort)
+            #Connect to server after server host and port are loaded
+            self.connectServer()
             self.username = self.configFile.readObject("username")
             #Send the stored userID to the server if it exists in the config file
             self.mainServer.setUserIDRequest(self.configFile.readObject("userID"))
@@ -57,12 +62,12 @@ class App:
         #Set stored userID
         self.userID = self.configFile.readObject("userID")
         self.mainServer.userID = self.userID
+        #Load people
+        self.loadPeople()
         if self.encryptionEnabled:
             #Send public key to server
             self.mainServer.setPublicKeyRequest(self.publicKey)
-            sleep(0.5)
-        #Load people
-        self.loadPeople()
+        #sleep(2)
         #Create chat window object
         self.applicationWindow = QApplication(sys.argv)
         self.chatWindow = chatWindow.MainWindow(self)
@@ -106,6 +111,9 @@ class App:
     def recievedPublicKey(self,userID,publicKey):
         #Add the public key to the person's file
         self.people[str(userID)].publicKey = publicKey
+    def stop(self):
+        #Stop the application
+        os._exit(0)
 if __name__ == "__main__":
     #Displays an error message if the user does not enter an app number
     if len(sys.argv) != 2:

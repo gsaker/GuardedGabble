@@ -3,6 +3,8 @@ from . import data
 from . import encrypt
 import base64
 import time
+import threading
+import json
 
 class Server:
     def __init__(self,serverHost,serverPort, app):
@@ -25,12 +27,33 @@ class Server:
             return False
     def recieveMessage(self):
         #This will run in a seperate thread, loop forever and try and recieve data from the server
+        buffer = "" 
         while True:
-            receivedRequest = data.receivedData(self.socket.recv(2048))
-            self.handleRequest(receivedRequest)
+            #Keep trying to recieve data from the client
+            receivedData = self.socket.recv(2048).decode("utf-8")
+            buffer += receivedData
+            # Assuming each JSON object ends with }
+            while "}" in buffer:  
+                # Find the first occurrence of }
+                endIndex = buffer.find("}") + 1
+                # Extract the single JSON object from the buffer
+                singleRequest= buffer[:endIndex]
+                # Remove the processed request from the buffer
+                buffer = buffer[endIndex:]  
+                try:
+                    #Handle the individual request
+                    receivedRequest= data.receivedData(singleRequest.encode('utf-8'))
+                    handleThread = threading.Thread(target=self.handleRequest,args=(receivedRequest,))
+                    handleThread.start()
+                except json.JSONDecodeError as e:
+                    #Print out any other JSON decode errors
+                    print("JSON Decode Error:", e)
     def sendData(self,sendData):
-        #This method will send a completed JSON request to the server
-        self.socket.send(sendData.encode())
+        try:
+            #This method will send a completed JSON request to the server
+            self.socket.send(sendData.encode())
+        except:
+            print("Failed to send data")
     def newUserRequest(self,username):
         #This method will send a request to the server to create a new user
         print("Sending request for userID")
@@ -127,7 +150,7 @@ class Server:
             messageRequest.append("signature",signatureBase64)
             # For now we will send the sender public key with the message request 
             #but in the future this will be requested from the server for security reasons
-            messageRequest.append("senderPublicKey",publicKey.decode('utf-8'))
+            #messageRequest.append("senderPublicKey",publicKey.decode('utf-8'))
             print("Sending message request")
             self.sendData(messageRequest.createJSON())
 
@@ -146,14 +169,16 @@ class Server:
             #Convert the base64 encoded encrypted message and signature back to bytes
             encryptedContent = base64.b64decode(encryptedContentBase64)
             signature = base64.b64decode(signatureBase64)
-            print("Received encrypted message:",encryptedContent)
-            print("Received signature:",signature)
+            # print("Received encrypted message:",encryptedContent)
+            # print("Received signature:",signature)
             #Decrypt the message using the recipient's private key
             decryptedContent = encrypt.decryptMessage(encryptedContent,self.app.privateKey)
-            print("Decrypted message:",decryptedContent)
-            print("Verifying signature")
+            # print("Decrypted message:",decryptedContent)
+            # print("Verifying signature")
+            senderPublicKey = receivedRequest.get("senderPublicKey").encode('utf-8')
+            self.app.people[str(receivedRequest.get("senderID"))].publicKey = senderPublicKey
             #Verify the signature using the sender's public key
-            verified = encrypt.verifySignature(decryptedContent,signature,receivedRequest.get("senderPublicKey").encode('utf-8'))
+            verified = encrypt.verifySignature(decryptedContent,signature,senderPublicKey)
             print("Signature verified:",verified)
             # If the signature is verified then print out the message content and the sender
             if verified:
