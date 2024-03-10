@@ -6,8 +6,10 @@ from time import sleep
 from gui import chatWindow
 from net import encrypt
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QMessageBox
 import sys
 import os
+import random
 #Test data
 class App:
     def __init__(self, appNo):
@@ -31,7 +33,9 @@ class App:
             self.configFile.createObject("server", self.serverHost)
             self.configFile.createObject("port", self.serverPort)
             self.configFile.createObject("username", self.username)
-            self.mainServer.newUserRequest(self.username)
+            userID = random.randint(100000,999999)
+            #Still set the userID request to the server
+            self.mainServer.setUserIDRequest(userID)         
             #Small delay for server to process request, this is terrible and will be replaced
             sleep(0.5)
             self.configFile.createObject("userID", self.mainServer.userID)
@@ -53,6 +57,7 @@ class App:
             self.connectServer()
             self.username = self.configFile.readObject("username")
             #Send the stored userID to the server if it exists in the config file
+            sleep(0.5)
             self.mainServer.setUserIDRequest(self.configFile.readObject("userID"))
             #Load keys from config file
             #Need to convert to bytes to use in encryption
@@ -107,13 +112,22 @@ class App:
         #Add the message to the person's chat history
         self.people[str(senderID)].appendChat(True, messageContent)
         #Emit signal to update chat window in different thread
-        self.chatWindow.messageReceived.emit()
+        #Send the message with the signal 
+        self.chatWindow.messageReceived.emit(senderID)
+        #self.chatWindow.messageReceived.emit()
     def recievedPublicKey(self,userID,publicKey):
         #Add the public key to the person's file
         self.people[str(userID)].publicKey = publicKey
     def stop(self):
         #Stop the application
         os._exit(0)
+    def showError(self,message):
+        #Simple method to show an error message
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Critical)
+        msg.setText(message)
+        msg.setWindowTitle("Error")
+        msg.exec_()
 if __name__ == "__main__":
     #Displays an error message if the user does not enter an app number
     if len(sys.argv) != 2:

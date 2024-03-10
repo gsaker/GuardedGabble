@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QInputDialog
 from gui import helpWindow
 from gui import settingsWindow
 class MainWindow(QWidget):
-    messageReceived = pyqtSignal()
+    messageReceived = pyqtSignal(str)
     addPersonToGUI = pyqtSignal()
     def __init__(self, app):
         super().__init__()
@@ -43,10 +43,13 @@ class MainWindow(QWidget):
         self.messageInput = QTextEdit()
         self.messageInput.setPlaceholderText("Chat Message Here...")
         self.messageInput.setMaximumHeight(100)
+        #connect enter key to send message
+        self.messageInput.installEventFilter(self)
 
         #create buttons
         self.sendButton = QPushButton('Send')
         self.sendButton.clicked.connect(lambda _,: self.sendMessage())
+
         self.settingButton = QPushButton('Settings')
         #connect settings button to open settings window
         self.settingButton.clicked.connect(lambda _: self.openSettingsWindow())
@@ -84,9 +87,9 @@ class MainWindow(QWidget):
         self.mainLayout.addLayout(self.buttonLayout)
         
         self.setLayout(self.mainLayout)
-        self.messageReceived.connect(self.openChatWindow)
+        self.messageReceived.connect(lambda senderID: self.openChatWindow(senderID=senderID))
         self.addPersonToGUI.connect(self.createPeopleButtons)
-
+        self.newMessageDictionary = {}
     def addUserClicked(self):
         #Shows an input box to enter the userID and gets the outputs
         text, ok = QInputDialog.getText(self, 'Add User', 'Enter User ID:')
@@ -98,6 +101,7 @@ class MainWindow(QWidget):
             self.app.addPerson(userId, userId)
             # Recreate the buttons to include the new user
             self.createPeopleButtons()
+            self.openChatWindow(self.currentChatPerson)
 
     def createPeopleButtons(self):
         self.chatSelectArea.setWidgetResizable(True)
@@ -123,13 +127,22 @@ class MainWindow(QWidget):
             #call openChatWindow with the person object as an argument
             button.clicked.connect(lambda _, person=self.app.people[person]: self.openChatWindow(person))
             self.chatSelectAreaLayout.addWidget(button)
-        #adress dictionary based on order added to layout
-        #this is so we can change the colour of the button when the user selects it
+        #Iterate through people and set the selected button to the previously selected person
+        if self.currentChatPerson != None:
+            for person in self.app.people:
+                if person == self.currentChatPerson.userID:
+                    self.setSelectedButtonColour(self.buttonDictionary[person])
+                    self.chatSelectAreaLayout.addStretch()
+                    self.chatSelectArea.setWidget(self.chatSelectAreaWidget)
+                    return
+
         if (self.chatSelectAreaLayout.itemAt(0) != None):
             self.setSelectedButtonColour(self.chatSelectAreaLayout.itemAt(0).widget())
             self.currentChatPerson = self.app.people[list(self.app.people.keys())[0]]
-        self.chatSelectAreaLayout.addStretch()
-        self.chatSelectArea.setWidget(self.chatSelectAreaWidget)
+            self.chatSelectAreaLayout.addStretch()
+            self.chatSelectArea.setWidget(self.chatSelectAreaWidget)
+
+
     def setSelectedButtonColour(self, button, oldButton=None):
         #set clicked on button to new style    
         button.setStyleSheet("""
@@ -153,21 +166,45 @@ class MainWindow(QWidget):
                 padding: 8px;
                 font-size: 14px;
             }
-            """)                                                                   
+            """)   
+    def setUnreadButtonColour(self, button):
+        #set clicked on button to new style (red)    
+        button.setStyleSheet("""
+        QPushButton {
+            background-color: #ff0000;
+            color: #ffffff;
+            border: 2px solid #455364;
+            border-radius: 10px;
+            padding: 8px;
+            font-size: 14px;
+        }
+        """)                                                                
     def sendMessage(self):
         message = self.messageInput.toPlainText()
-        newChatBubble = ChatBubble(message, True)
-        self.addWithSpacer(newChatBubble)
-        self.currentChatPerson.appendChat(False, message)
-        if self.app.encryptionEnabled:
-            self.app.mainServer.messageRequest(message, self.currentChatPerson.userID,self.app.publicKey)
+        #Check if message is valid before sending
+        if self.validateMessage(message):
+            newChatBubble = ChatBubble(message, True)
+            self.addWithSpacer(newChatBubble)
+            newChatBubble.adjustSizeToContent()
+            self.currentChatPerson.appendChat(False, message)
+            self.messageInput.clear()
+            if self.app.encryptionEnabled:
+                self.app.mainServer.messageRequest(message, self.currentChatPerson.userID,self.app.publicKey)
+            else:
+                self.app.mainServer.messageRequest(message, self.currentChatPerson.userID)
+    def validateMessage(self, message):
+        #Check if message is valid
+        if len(message) > 0 and len(message) < 440:
+            return True
         else:
-            self.app.mainServer.messageRequest(message, self.currentChatPerson.userID)
+            #Show a dialog box if the message is invalid
+            self.app.showError("Message must be more than 0 and less than 440 characters")
+            return False
     def addWithSpacer(self,item):
         self.scrollAreaLayout.removeItem(self.spacerItem)
         self.scrollAreaLayout.addWidget(item)
         self.scrollAreaLayout.addItem(self.spacerItem)
-    def openChatWindow(self, person=None):
+    def openChatWindow(self, person=None, senderID=None):
         self.scrollAreaLayout = QVBoxLayout()
         self.scrollAreaLayout.setAlignment(Qt.AlignCenter)
         self.scrollAreaWidget = QWidget()
@@ -176,7 +213,10 @@ class MainWindow(QWidget):
         self.spacerItem = QSpacerItem(20, 10000, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.scrollAreaLayout.addItem(self.spacerItem)
         if person == None:
+            #if person is not passed as an argument, then a message must have been recieved
             person = self.currentChatPerson
+            #This means we should use the passed senderID to set the button colour red
+            self.setUnreadButtonColour(self.buttonDictionary[senderID])
         #clear chat window
         #set current chat person, passing the new person 
         #and current person buttons as arguments
@@ -192,13 +232,24 @@ class MainWindow(QWidget):
         # For testing purposes, attempt to get the public key from the server
         if self.app.encryptionEnabled and self.currentChatPerson.publicKey == None:
             self.app.mainServer.getPublicKeyRequest(self.currentChatPerson.userID)
+        #scroll to the bottom of the chat window
+        self.scrollArea.verticalScrollBar().setValue(self.scrollArea.verticalScrollBar().maximum())
+
+
     def openHelpWindow(self):
         self.helpWindow = helpWindow.HelpWindow()
         self.helpWindow.show()
     def openSettingsWindow(self):
         self.settingsWindow = settingsWindow.SettingsWindow(self.app)
         self.settingsWindow.show()
-
+    def eventFilter(self, obj, event):
+        #Check if the enter key is pressed in the message input
+        if event.type() == QEvent.KeyPress and obj is self.messageInput:
+            if event.key() == Qt.Key_Return and self.messageInput.hasFocus():
+                #If the enter key is pressed, send the message
+                self.sendMessage()
+                return True
+        return super().eventFilter(obj, event)
 
 class ChatBubble(QWidget):
     # This class is used to create the chat bubble
@@ -250,3 +301,20 @@ class ChatBubble(QWidget):
         self.layout.addWidget(self.textEdit)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.textEdit.setText(self.message)
+        #If the height is too large, increase the size of the text box
+        self.adjustSizeToContent()
+        self.textEdit.document().documentLayout().documentSizeChanged.connect(self.adjustSizeToContent)
+
+    def adjustSizeToContent(self):
+        # Call this method after setting the text or on resize events
+        docHeight = self.textEdit.document().size().height()
+        # Set the minimum height of the text box to 55
+        # Increase the height of the text box to fit the content
+        # Add 20 to the height to account for padding
+        newHeight = max(55, int(docHeight + 20))  
+        self.setMinimumHeight(newHeight)
+
+    def resizeEvent(self, event):
+        self.adjustSizeToContent()
+        super().resizeEvent(event)
+    

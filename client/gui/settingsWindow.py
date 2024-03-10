@@ -52,8 +52,45 @@ class SettingsWindow(QDialog):
         self.setLayout(self.layout)
     def saveSettings(self):
         #Save settings to config file
-        self.app.configFile.createObject("server", self.serverAddressTextbox.text())
-        self.app.configFile.createObject("port", self.serverPortTextbox.text())
-        self.app.configFile.createObject("username", self.usernameTextbox.text())
-        #Restart application
-        self.app.stop()
+        if self.validateUsername(self.usernameTextbox.text()):
+            self.app.configFile.createObject("username", self.usernameTextbox.text())
+            if self.validateServer(self.serverAddressTextbox.text()):
+                self.app.configFile.createObject("server", self.serverAddressTextbox.text())
+                if self.validatePort(self.serverPortTextbox.text()):
+                    self.app.configFile.createObject("port", self.serverPortTextbox.text())
+                    #Restart application
+                    self.app.stop()
+    def validateUsername(self, username):
+        #Check if username is valid
+        if len(username) > 3 and len(username) < 20:
+            pass
+        else:
+            #Show a dialog box if the username is invalid
+            self.app.showError("Username must be more than 3 and less than 20 characters")
+            return False
+        if username.isalnum():
+            return True
+        else:
+            self.app.showError("Username can only contain letters and numbers")
+            return False
+    def validateServer(self, server):
+        #Check if server address is valid
+        #If it contains a . then it's valid
+        if "." in server:
+            return True
+        else:
+            self.app.showError("Server address is invalid, should be of the form x.x.x.x or a domain name")
+            return False
+    def validatePort(self, port):
+        #Check if port is valid
+        try:
+            port = int(port)
+            if port > 0 and port <= 65535:
+                return True
+            else:
+                self.app.showError("Port must be between 0 and 65535")
+                return False
+        except:
+            self.app.showError("Port must be a number")
+            return False
+

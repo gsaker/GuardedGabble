@@ -187,6 +187,7 @@ class Client:
         forwardRequest = data.SendData()
         #Check if recipient is connected
         #If not then place the message in the buffer
+        allClients.outputClients()
         if not allClients.clientConnected(int(receivedRequest.get("recipientID"))):
             #Debug print statements
             print("User with userID",receivedRequest.get("recipientID"),"not found.")
@@ -204,6 +205,7 @@ class Client:
         forwardRequest.append("recipientID",receivedRequest.get("recipientID"))
         forwardRequest.append("senderID",receivedRequest.get("senderID"))
         forwardRequest.append("messageContent",receivedRequest.get("messageContent"))
+        forwardRequest.append("username",receivedRequest.get("username"))
         if encryptionEnabled:
             #Add the signature to the message if encryption is enabled
             forwardRequest.append("signature",receivedRequest.get("signature"))
@@ -224,6 +226,9 @@ class Client:
         print("Updating user ID from",self.userID,"to",receivedRequest.get("userID"))
         self.newUserID = receivedRequest.get("userID")
         allClients = self.clientsQueue.get()
+        print("Allclients update userID")
+        allClients.outputClients()
+        print("Whole queue",self.clientsQueue)
         allClients.updateUserID(self.userID,self.newUserID)
         allClients.addPerson(str(self.userID), str(self.userID))
         buffer = allClients.getBuffers(str(self.userID))
@@ -231,7 +236,6 @@ class Client:
         #Wait for client to launch the GUI
         time.sleep(0.5)
         self.sendBuffer(buffer,allClients)
-        self.clientsQueue.put(allClients)
     def sendBuffer(self, buffer, allClients):
         #This method will send the buffer to the client
         #Iterate through each request stored in the buffer
@@ -241,8 +245,7 @@ class Client:
             print("Item:",item[1])
             #Send the request to the client
             self.handleMessage(item[1])
-        #allClients.clearBuffer(str(self.userID))
-        self.clientsQueue.put(allClients)
+        allClients.clearBuffer(str(self.userID))
 
     def handleSetPublicKey(self,receivedRequest):
         self.publicKey = receivedRequest.get("publicKey").encode('utf-8')
@@ -271,17 +274,17 @@ class Client:
             publicKeyResponse.append("userID",userIDToGet)
             publicKeyResponse.append("publicKey",publicKey)
             self.sendMessage(publicKeyResponse.createJSON())
-            #Close the queue so it can be used again
-            self.clientsQueue.put(allClients)
+            
+
         except AttributeError:
             print("User with userID",userIDToGet,"not found.")
-            self.clientsQueue.put(allClients)
             publicKeyResponse = data.SendData()
             publicKeyResponse.append("requestType",3)
             publicKeyResponse.append("userID",userIDToGet)
             publicKeyResponse.append("publicKey","None")
             self.sendMessage(publicKeyResponse.createJSON())
             #Close the queue so it can be used again
-            self.clientsQueue.put(allClients)
             return
+        #Close the queue so it can be used again
+        self.clientsQueue.put(allClients)
         

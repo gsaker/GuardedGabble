@@ -9,7 +9,7 @@ def generateKeys():
     # Generate private and public keys
     privateKey = rsa.generate_private_key(
         public_exponent=65537,
-        key_size=2048,
+        key_size=4096,
         backend=default_backend()
     )
     # Get the public key from the private key
@@ -29,21 +29,24 @@ def generateKeys():
     return pemPrivate, pemPublic
 
 def encryptMessage(message, recipientPublicKeyPEM):
-    # Load the public key from the PEM file
-    recipientPublicKey = serialization.load_pem_public_key(
-        recipientPublicKeyPEM,
-        backend=default_backend()
-    )
-    # Encrypt the message using the public key
-    encrypted = recipientPublicKey.encrypt(
-        message.encode(),
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
+    try:
+        # Load the public key from the PEM file
+        recipientPublicKey = serialization.load_pem_public_key(
+            recipientPublicKeyPEM,
+            backend=default_backend()
         )
-    )
-    return encrypted
+        # Encrypt the message using the public key
+        encrypted = recipientPublicKey.encrypt(
+            message.encode(),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+        return encrypted
+    except:
+        return False
 
 def signMessage(message, senderPrivateKeyPEM):
     # Load the private key from the PEM file

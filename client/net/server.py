@@ -42,9 +42,11 @@ class Server:
                 buffer = buffer[endIndex:]  
                 try:
                     #Handle the individual request
+                   # receivedRequest= data.receivedData(singleRequest.encode('utf-8'))
+                    #handleThread = threading.Thread(target=self.handleRequest,args=(receivedRequest,))
+                    #handleThread.start()
                     receivedRequest= data.receivedData(singleRequest.encode('utf-8'))
-                    handleThread = threading.Thread(target=self.handleRequest,args=(receivedRequest,))
-                    handleThread.start()
+                    self.handleRequest(receivedRequest)
                 except json.JSONDecodeError as e:
                     #Print out any other JSON decode errors
                     print("JSON Decode Error:", e)
@@ -64,6 +66,7 @@ class Server:
         self.sendData(userIDRequest.createJSON())
     def setUserIDRequest(self,userID):
         print("Sending request to set userID to stored value")
+        self.userID = userID
         userIDRequest = data.SendData()
         #craft the request using request type 5
         userIDRequest.append("requestType",5)
@@ -123,6 +126,7 @@ class Server:
             messageRequest.append("recipientID",recipientID)
             messageRequest.append("senderID",str(self.userID))
             messageRequest.append("messageContent",messageContent)
+            messageRequest.append("username",self.app.username)
             print(recipientID)
             self.sendData(messageRequest.createJSON())
         else:
@@ -132,6 +136,9 @@ class Server:
             print("Recipient:",recipientID)
             #Encrypt the message using the recipient's public key
             encryptedContent = encrypt.encryptMessage(messageContent, self.app.people[recipientID].publicKey)
+            if encryptedContent == False:
+                self.app.showError("Encryption failed, message is too long. Please try a shorter message.")
+                return
             print("Encrypted message:",encryptedContent)
             #Sign the message using the sender's private key
             signature = encrypt.signMessage(messageContent,self.app.privateKey)
@@ -148,6 +155,7 @@ class Server:
             messageRequest.append("senderID",self.userID)
             messageRequest.append("messageContent",encryptedContentBase64)
             messageRequest.append("signature",signatureBase64)
+            messageRequest.append("username",self.app.username)
             # For now we will send the sender public key with the message request 
             #but in the future this will be requested from the server for security reasons
             #messageRequest.append("senderPublicKey",publicKey.decode('utf-8'))
@@ -161,6 +169,7 @@ class Server:
         if self.encryptionEnabled==False:
             #specific handler for a message response from the server
             #prints out the message content and the sender
+            self.app.people[str(receivedRequest.get("senderID"))].setUsername(receivedRequest.get("username"))
             self.app.receivedMessage(receivedRequest.get("senderID"),receivedRequest.get("messageContent"))
         else:
             #We have included lots of debug print statements to show whats going on
@@ -169,14 +178,15 @@ class Server:
             #Convert the base64 encoded encrypted message and signature back to bytes
             encryptedContent = base64.b64decode(encryptedContentBase64)
             signature = base64.b64decode(signatureBase64)
-            # print("Received encrypted message:",encryptedContent)
-            # print("Received signature:",signature)
+            print("Received encrypted message:",encryptedContent)
+            print("Received signature:",signature)
             #Decrypt the message using the recipient's private key
             decryptedContent = encrypt.decryptMessage(encryptedContent,self.app.privateKey)
-            # print("Decrypted message:",decryptedContent)
-            # print("Verifying signature")
+            print("Decrypted message:",decryptedContent)
+            print("Verifying signature")
             senderPublicKey = receivedRequest.get("senderPublicKey").encode('utf-8')
             self.app.people[str(receivedRequest.get("senderID"))].publicKey = senderPublicKey
+            self.app.people[str(receivedRequest.get("senderID"))].setUsername(receivedRequest.get("username"))
             #Verify the signature using the sender's public key
             verified = encrypt.verifySignature(decryptedContent,signature,senderPublicKey)
             print("Signature verified:",verified)

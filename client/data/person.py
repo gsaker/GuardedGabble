@@ -46,6 +46,14 @@ class Person(File):
         # Retrieve a specific chat from the Person object
         return super().readObject(["chats"][int(chatID)])
     def getChats(self):
-        return super().readObject("chats")
+        try:
+            return super().readObject("chats")
+        except:
+            # If there is an error, then a chat is likely being written to the file at the same time
+            return {}
     def readJSON(self):
         return super().readJSON()
+    def setUsername(self, username):
+        # Set the username of the Person object
+        self.username = username
+        super().createObject("username", self.username)
