@@ -16,7 +16,7 @@ class App:
         print("Starting GuardedBabble")
         #This is just test data, in the future there will be a method that runs first time setup
         self.serverHost = '127.0.0.1'
-        self.serverPort = 64147
+        self.serverPort = 4444
         self.username = "User1"
         self.appNo = appNo
         self.encryptionEnabled = True

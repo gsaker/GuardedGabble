@@ -13,4 +13,4 @@ def startClient(host,port):
     clientSocket.close()
 #In this example we will use the localhost as the server and client
 #Are running on the same machine
-startClient('127.0.0.1',64147)
+startClient('127.0.0.1',64148)

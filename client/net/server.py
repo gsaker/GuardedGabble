@@ -18,13 +18,9 @@ class Server:
         #If it succeeds then return true and print success message
         self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        try:
-            self.socket.connect((self.serverHost,self.serverPort))
-            print("Connected to server")
-            return True
-        except:
-            print("Connection failed")
-            return False
+        self.socket.connect((self.serverHost,self.serverPort))
+        print("Connected to server")
+        return True
     def recieveMessage(self):
         #This will run in a seperate thread, loop forever and try and recieve data from the server
         buffer = "" 

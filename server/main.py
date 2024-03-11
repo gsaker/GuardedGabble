@@ -7,7 +7,7 @@ class Server:
     def __init__(self):
         print("Starting Server")
         # Set the host and port for the server to listen on
-        localhost = '127.0.0.1'
+        localhost = '192.168.40.12287liwequasjb vkehflhefwhjewafjl'
         port = 64147
 
         # Start a new thread to accept incoming client connections
