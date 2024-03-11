@@ -108,41 +108,27 @@ class Client:
         self.clientsQueue = clientsQueue
         self.active = True
     def recieveMessage(self):
-            #Will run in seperate thread
-            buffer = "" 
-            while self.active:
+        #Will run in seperate thread
+        buffer = "" 
+        while self.active:
+            #Keep trying to recieve data from the client
+            receivedData = self.socket.recv(2048).decode("utf-8")
+            buffer += receivedData
+            # Assuming each JSON object ends with }
+            while "}" in buffer:  
+                # Find the first occurrence of }
+                endIndex = buffer.find("}") + 1
+                # Extract the single JSON object from the buffer
+                singleRequest= buffer[:endIndex]
+                # Remove the processed request from the buffer
+                buffer = buffer[endIndex:]  
                 try:
-                    #Keep trying to recieve data from the client
-                    receivedData = self.socket.recv(2048).decode("utf-8")
-                    buffer += receivedData
-                    # Assuming each JSON object ends with }
-                    while "}" in buffer:  
-                        # Find the first occurrence of }
-                        endIndex = buffer.find("}") + 1
-                        # Extract the single JSON object from the buffer
-                        singleRequest= buffer[:endIndex]
-                        # Remove the processed request from the buffer
-                        buffer = buffer[endIndex:]  
-                        try:
-                            #Handle the individual request
-                            receivedRequest= data.receivedData(singleRequest)
-                            self.handleRequest(receivedRequest)
-                        except json.JSONDecodeError as e:
-                            #Print out any other JSON decode errors
-                            print("JSON Decode Error:", e)
-                except Exception as e:
-                    #If an error occurs then we can assume the client has 
-                    #disconnected/errored so remove them from the server
-                    #Print the error for debugging
-                    print("Error:",e)
-                    allClients = self.clientsQueue.get()
-                    #Remove the client from the dictionary
-                    allClients.removeClient(self)
-                    self.clientsQueue.put(allClients)
-                    #stopping the recieve loop
-                    self.active = False
-                    #Close the socket
-                    self.socket.close()
+                    #Handle the individual request
+                    receivedRequest= data.receivedData(singleRequest)
+                    self.handleRequest(receivedRequest)
+                except json.JSONDecodeError as e:
+                    #Print out any other JSON decode errors
+                    print("JSON Decode Error:", e)
     def sendMessage(self,sendData):
         #This method will send a completed JSON request to the server
         self.socket.send(sendData.encode())
