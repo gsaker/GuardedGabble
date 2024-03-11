@@ -119,6 +119,8 @@ class App:
         #Add the public key to the person's file
         self.people[str(userID)].publicKey = publicKey
     def stop(self):
+        #Disconnect 
+        self.mainServer.disconnect()
         #Stop the application
         os._exit(0)
     def showError(self,message):

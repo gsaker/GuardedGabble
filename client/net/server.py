@@ -192,3 +192,11 @@ class Server:
             # Otherwise the message may have been tampered with
             else:
                 print("Signature not verified")
+    def disconnect(self):
+        #Send a disconnect request to the server
+        disconnectRequest = data.SendData()
+        #craft the request using request type 7 as described in the design section
+        disconnectRequest.append("requestType",7)
+        self.sendData(disconnectRequest.createJSON())
+        #Close the socket
+        self.socket.close()

@@ -163,6 +163,14 @@ class Client:
                 self.handleSetUserID(receivedRequest)
             if requestType == 6:
                 self.handleSetPublicKey(receivedRequest)
+            if requestType == 7:
+                #If the request type is 7 then the client has disconnected
+                print("Client disconnected:", self.userID)
+                allClients = self.clientsQueue.get()
+                allClients.removeClient(self)
+                self.clientsQueue.put(allClients)
+                self.active = False
+                self.socket.close()
     def handleNewUser(self,receivedRequest):
         #Sets username attribute to received data and prints out information about the new user
         self.username = receivedRequest.get("username")
