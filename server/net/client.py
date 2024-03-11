@@ -5,7 +5,7 @@ import time
 import json
 import threading
 sys.path.append(".")
-encryptionEnabled = True
+encryptionEnabled = False
 saveMessages = True
 class Clients:
     #This class will hold all the clients connected to the server

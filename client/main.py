@@ -19,7 +19,7 @@ class App:
         self.serverPort = 4444
         self.username = "User1"
         self.appNo = appNo
-        self.encryptionEnabled = True
+        self.encryptionEnabled = False
         #Create config and people file object
         self.configFile = file.File("config.json", self.appNo)
         self.peopleFile = file.File("people.json", self.appNo)
