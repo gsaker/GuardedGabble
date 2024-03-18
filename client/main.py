@@ -16,10 +16,10 @@ class App:
         print("Starting GuardedBabble")
         #This is just test data, in the future there will be a method that runs first time setup
         self.serverHost = '127.0.0.1'
-        self.serverPort = 4444
+        self.serverPort = 64147
         self.username = "User1"
         self.appNo = appNo
-        self.encryptionEnabled = False
+        self.encryptionEnabled = True
         #Create config and people file object
         self.configFile = file.File("config.json", self.appNo)
         self.peopleFile = file.File("people.json", self.appNo)
@@ -134,7 +134,8 @@ if __name__ == "__main__":
     #Displays an error message if the user does not enter an app number
     if len(sys.argv) != 2:
         print("Usage: python main.py <appNo>")
-        sys.exit(1)
-    #Set the appnumber variable
-    appNo = sys.argv[1]
+        #Set the appnumber variable
+        appNo = "GuardedBabble"
+    else:
+        appNo = sys.argv[1]
     mainProcess = App(appNo)

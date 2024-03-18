@@ -16,17 +16,27 @@ class Server:
     def connectServer(self):
         #Create socket object and try to connect to server, if it fails then return false and print error message
         #If it succeeds then return true and print success message
-        self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.connect((self.serverHost,self.serverPort))
-        print("Connected to server")
-        return True
+        try:
+            print("Connecting to server")
+            #Try to connect for 5 seconds
+            self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.socket.connect((self.serverHost,self.serverPort))
+            print("Connected to server")
+            return True
+        except:
+            print("Failed to connect to server")
+            return False
     def recieveMessage(self):
         #This will run in a seperate thread, loop forever and try and recieve data from the server
         buffer = "" 
         while True:
             #Keep trying to recieve data from the client
-            receivedData = self.socket.recv(2048).decode("utf-8")
+            try:
+                receivedData = self.socket.recv(2048).decode("utf-8")
+            except TimeoutError:
+                print("Connection timed out")
+                break
             buffer += receivedData
             # Assuming each JSON object ends with }
             while "}" in buffer:  
@@ -37,10 +47,6 @@ class Server:
                 # Remove the processed request from the buffer
                 buffer = buffer[endIndex:]  
                 try:
-                    #Handle the individual request
-                   # receivedRequest= data.receivedData(singleRequest.encode('utf-8'))
-                    #handleThread = threading.Thread(target=self.handleRequest,args=(receivedRequest,))
-                    #handleThread.start()
                     receivedRequest= data.receivedData(singleRequest.encode('utf-8'))
                     self.handleRequest(receivedRequest)
                 except json.JSONDecodeError as e:
@@ -115,6 +121,7 @@ class Server:
         print("UserID:",self.userID)
     def messageRequest(self,messageContent, recipientID, publicKey=None):
         if self.encryptionEnabled==False:
+            print("Encryption disabled")
             #This method will send a request to the server to send a message to a user
             messageRequest = data.SendData()
             #craft the request using request type 4 as described in the design section
@@ -126,6 +133,7 @@ class Server:
             print(recipientID)
             self.sendData(messageRequest.createJSON())
         else:
+            print("Encryption enabled")
             #We have included lots of debug print statements to show 
             #the process of encrypting and decrypting messages
             print("Message:",messageContent)

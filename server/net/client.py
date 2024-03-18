@@ -5,13 +5,14 @@ import time
 import json
 import threading
 sys.path.append(".")
-encryptionEnabled = False
-saveMessages = True
+
 class Clients:
     #This class will hold all the clients connected to the server
     #Clients can only be added or removed from this class due to the attribute being private
     #This means the code will be more reliable as the clients attribute can only be changed by the methods in this class
-    def __init__(self):
+    def __init__(self, encryptionEnabled, saveMessages):
+        self.encryptionEnabled = encryptionEnabled
+        self.saveMessages = saveMessages
         self.__clients = {}
         #Create a people file object
         self.peopleFile = person.File("people.json", "server")
@@ -150,13 +151,17 @@ class Client:
             if requestType == 6:
                 self.handleSetPublicKey(receivedRequest)
             if requestType == 7:
-                #If the request type is 7 then the client has disconnected
-                print("Client disconnected:", self.userID)
-                allClients = self.clientsQueue.get()
-                allClients.removeClient(self)
-                self.clientsQueue.put(allClients)
-                self.active = False
-                self.socket.close()
+                self.disconnect()
+    def disconnect(self):
+        #If the request type is 7 then the client has disconnected
+        print("Client disconnected:", self.userID)
+        allClients = self.clientsQueue.get()
+        allClients.removeClient(self)
+        self.clientsQueue.put(allClients)
+        #Set the active attribute to false so the recieveMessage method will stop
+        self.active = False
+        #Close the socket
+        self.socket.close()
     def handleNewUser(self,receivedRequest):
         #Sets username attribute to received data and prints out information about the new user
         self.username = receivedRequest.get("username")
@@ -200,13 +205,14 @@ class Client:
         forwardRequest.append("senderID",receivedRequest.get("senderID"))
         forwardRequest.append("messageContent",receivedRequest.get("messageContent"))
         forwardRequest.append("username",receivedRequest.get("username"))
-        if encryptionEnabled:
+        if allClients.encryptionEnabled == True:
+            print("Encryption enabled")
             #Add the signature to the message if encryption is enabled
             forwardRequest.append("signature",receivedRequest.get("signature"))
             #Add the sender's public key from server storage to the message
             forwardRequest.append("senderPublicKey",allClients.getPublicKey(int(receivedRequest.get("senderID"))))
         #If encryption is not enabled and saveMessages is true then save the message
-        if not encryptionEnabled and saveMessages:
+        if allClients.saveMessages == True:
             print("Saving message")
             #Add a new person, if they already exists the 
             #addPerson method will do nothing and print a message
@@ -247,12 +253,16 @@ class Client:
         #Get the current public key of the user
         #By default this set to None
         self.currentPublicKey = allClients.getPublicKey(self.userID)
+        print("Current public key:",self.currentPublicKey)
+        print(type(self.currentPublicKey))
+        print("Encryption enabled:",allClients.encryptionEnabled)
+        print(type(allClients.encryptionEnabled))
         #Only set the public key and store in the file if encryption is enabled
         #And the public key is currently set to None
-        if self.currentPublicKey == None and encryptionEnabled:
+        if self.currentPublicKey == None and allClients.encryptionEnabled:
             print("Setting public key read only")
             allClients.people[str(self.userID)].setPublicKey(self.publicKey.decode('utf-8'))
-        print("Public key set to",self.publicKey)
+        #print("Public key set to",self.publicKey)
         self.clientsQueue.put(allClients)
     def handleGetPublicKey(self,receivedRequest):
         try:
