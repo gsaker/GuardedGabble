@@ -64,8 +64,12 @@ class Clients:
         else:
             print("User with userID"+ str(oldUserID) +"not found.")
     def getPublicKey(self,userID):
-        print(self.people)
-        return self.people[str(userID)].getPublicKey()
+        try:
+            print(self.people)
+            return self.people[str(userID)].getPublicKey()
+        except:
+            print("User with userID",userID,"not found.")
+            return None
     def loadPeople(self):
         #load list of people
         peopleArray = self.peopleFile.readObject("people")
@@ -278,8 +282,6 @@ class Client:
             publicKeyResponse.append("userID",userIDToGet)
             publicKeyResponse.append("publicKey",publicKey)
             self.sendMessage(publicKeyResponse.createJSON())
-            
-
         except AttributeError:
             print("User with userID",userIDToGet,"not found.")
             publicKeyResponse = data.SendData()

@@ -47,6 +47,11 @@ class File:
         # append data to existing key
         jsonData[key].append(data)
         self.writeJSON(jsonData)
+    def removeObject(self,key, data):
+        jsonData = self.readJSON()
+        # remove data from existing key
+        jsonData[key].remove(data)
+        self.writeJSON(jsonData)
     def readObject(self,key):
         jsonData = self.readJSON()
         return jsonData[key]

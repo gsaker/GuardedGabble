@@ -93,16 +93,20 @@ class Server:
     def handleGetPublicKeyResponse(self,receivedRequest):
         #Extract the relevant data from the received request and print it out
         #Need to convert to bytes to use in encryption
-        recievedPublicKey = receivedRequest.get("publicKey").encode('utf-8')
-        recievedUserID = receivedRequest.get("userID")
-        if recievedPublicKey.decode('utf-8') != "None":
-            print("Received public key from server")
-            print("Public Key:",recievedPublicKey)
-            print("UserID:",recievedUserID)
-            #Send the public key to the main thread to set it in the correct person object
-            self.app.recievedPublicKey(recievedUserID,recievedPublicKey)
+        if receivedRequest.get("publicKey") != None:
+            recievedPublicKey = receivedRequest.get("publicKey").encode('utf-8')
+            recievedUserID = receivedRequest.get("userID")
+            if recievedPublicKey.decode('utf-8') != "None":
+                print("Received public key from server")
+                print("Public Key:",recievedPublicKey)
+                print("UserID:",recievedUserID)
+                #Send the public key to the main thread to set it in the correct person object
+                self.app.recievedPublicKey(recievedUserID,recievedPublicKey)
+            else:
+                print("User does not have a public key on server")
         else:
-            print("User does not have a public key on server")
+            print("User does not exist on server")
+            self.app.removePerson(receivedRequest.get("userID"))
     def handleRequest(self,receivedRequest):
         #Main handler method for when data is received from the server
         #This will be added to later as more request types are added

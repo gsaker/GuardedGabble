@@ -10,6 +10,7 @@ from gui import settingsWindow
 class MainWindow(QWidget):
     messageReceived = pyqtSignal(str)
     addPersonToGUI = pyqtSignal()
+    personRemoved = pyqtSignal()
     def __init__(self, app):
         super().__init__()
         #set variable to acess passed through app object
@@ -89,6 +90,7 @@ class MainWindow(QWidget):
         self.setLayout(self.mainLayout)
         self.messageReceived.connect(lambda senderID: self.openChatWindow(senderID=senderID))
         self.addPersonToGUI.connect(self.createPeopleButtons)
+        self.personRemoved.connect(self.showNotExistError)
         self.newMessageDictionary = {}
     def addUserClicked(self):
         #Shows an input box to enter the userID and gets the outputs
@@ -96,11 +98,18 @@ class MainWindow(QWidget):
         # Only continue if the user clicked ok
         if ok:
             userId = text
+            #Show error is userID contains non-numeric characters
+            if not userId.isnumeric():
+                self.app.showError("User ID must be a number")
+                return
             # Add the user to the people list
             # For now we will user the userID as the username, when the other person sends a message the actual username will be populated
             self.app.addPerson(userId, userId)
             # Recreate the buttons to include the new user
             self.createPeopleButtons()
+            #Get the public key from the server
+            if self.app.encryptionEnabled:
+                self.app.mainServer.getPublicKeyRequest(userId)
             self.openChatWindow(self.currentChatPerson)
 
     def createPeopleButtons(self):
@@ -141,7 +150,9 @@ class MainWindow(QWidget):
             self.currentChatPerson = self.app.people[list(self.app.people.keys())[0]]
             self.chatSelectAreaLayout.addStretch()
             self.chatSelectArea.setWidget(self.chatSelectAreaWidget)
-
+    def showNotExistError(self):
+        #Show a dialog box if the user does not exist
+        self.app.showError("User does not exist")
 
     def setSelectedButtonColour(self, button, oldButton=None):
         #set clicked on button to new style    
@@ -234,7 +245,6 @@ class MainWindow(QWidget):
             self.app.mainServer.getPublicKeyRequest(self.currentChatPerson.userID)
         #scroll to the bottom of the chat window
         self.scrollArea.verticalScrollBar().setValue(self.scrollArea.verticalScrollBar().maximum())
-
 
     def openHelpWindow(self):
         self.helpWindow = helpWindow.HelpWindow()

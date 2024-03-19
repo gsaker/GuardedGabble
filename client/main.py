@@ -103,6 +103,12 @@ class App:
         newPersonFile = person.Person(userID, appNo ,username)
         self.people[userID] = newPersonFile
         self.peopleFile.appendObject("people",userID)
+    def removePerson(self, userID):
+        #Remove a person from the people list
+        self.peopleFile.removeObject("people",userID)
+        del self.people[userID]
+        self.chatWindow.addPersonToGUI.emit()
+        self.chatWindow.personRemoved.emit()
     def receivedMessage(self, senderID, messageContent):
         #Print the message (for debugging purposes)
         print("received message from",senderID)
