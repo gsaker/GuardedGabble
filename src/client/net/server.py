@@ -117,6 +117,8 @@ class Server:
             self.handleGetPublicKeyResponse(receivedRequest)
         if requestType == 4:
             self.handleMessageResponse(receivedRequest)
+        if requestType == 8:
+            self.handleContinueResponse(receivedRequest)
     def handleNewUserResponse(self,receivedRequest):
         #specific handler for a new user response from the server
         #sets userID sent by the server
@@ -212,3 +214,11 @@ class Server:
         self.sendData(disconnectRequest.createJSON())
         #Close the socket
         self.socket.close()
+    
+    def handleContinueResponse(self,receivedRequest):
+        #This method will handle a continue response from the server
+        #This is used to tell the client that the server is ready to continue
+        #with the next request
+        print("Continue response received")
+        self.app.continueResponseReceived = True
+        
