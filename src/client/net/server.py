@@ -231,7 +231,5 @@ class Server:
             counter += 1
             if counter == 10:
                 self.app.showError("Server connection failed, please ensure you are connected to the internet. The message sent before this error will not have been sent.")
-                self.stop()
                 break
         print("Continue response received")
-        

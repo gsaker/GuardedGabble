@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QMessageBox
 import sys
 import os
 import random
-#Test data
+
 class App:
     def __init__(self, appNo):
         print("Starting GuardedBabble")
