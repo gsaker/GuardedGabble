@@ -190,6 +190,7 @@ class Client:
 
     def handleMessage(self,receivedRequest):
         print("Handling message")
+        self.continueResponse()
         #This method will forward a message to the recipient
         #This means if required this data can be stored later
         allClients = self.clientsQueue.get()
@@ -231,6 +232,7 @@ class Client:
         print("New message to forward to ",receivedRequest.get("recipientID"))
         allClients.sendMessage(forwardRequest.createJSON(),int(receivedRequest.get("recipientID")))
         self.clientsQueue.put(allClients)
+        self.continueResponse()
     def handleSetUserID(self,receivedRequest):
         #This method will set the userID attribute to the received userID
         print("Updating user ID from",self.userID,"to",receivedRequest.get("userID"))
@@ -240,6 +242,8 @@ class Client:
         allClients.outputClients()
         print("Whole queue",self.clientsQueue)
         allClients.updateUserID(self.userID,self.newUserID)
+        #Send continue 
+        self.continueResponse()
         allClients.addPerson(str(self.userID), str(self.userID))
         buffer = allClients.getBuffers(str(self.userID))
         self.clientsQueue.put(allClients)

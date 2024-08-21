@@ -2,7 +2,6 @@ from data import file
 from data import person
 from net import server
 import threading
-from time import sleep
 from gui import chatWindow
 from net import encrypt
 from PyQt5.QtWidgets import QApplication
@@ -36,8 +35,6 @@ class App:
             userID = random.randint(100000,999999)
             #Still set the userID request to the server
             self.mainServer.setUserIDRequest(userID)         
-            #Small delay for server to process request, this is terrible and will be replaced
-            sleep(0.5)
             self.configFile.createObject("userID", self.mainServer.userID)
             self.peopleFile.createObject("people", [])
             if self.encryptionEnabled:
@@ -56,8 +53,6 @@ class App:
             #Connect to server after server host and port are loaded
             self.connectServer()
             self.username = self.configFile.readObject("username")
-            #Send the stored userID to the server if it exists in the config file
-            self.waitForContinue()
             self.mainServer.setUserIDRequest(self.configFile.readObject("userID"))
             #Load keys from config file
             #Need to convert to bytes to use in encryption
@@ -72,7 +67,6 @@ class App:
         if self.encryptionEnabled:
             #Send public key to server
             self.mainServer.setPublicKeyRequest(self.publicKey)
-        #sleep(2)
         #Create chat window object
         self.applicationWindow = QApplication(sys.argv)
         self.chatWindow = chatWindow.MainWindow(self)

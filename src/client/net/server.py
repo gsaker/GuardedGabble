@@ -22,8 +22,6 @@ class Server:
             self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.socket.connect((self.serverHost,self.serverPort))
-            print("Connected to server")
-            self.waitForContinue()
             return True
         except:
             print("Failed to connect to server")
@@ -232,6 +230,8 @@ class Server:
             time.sleep(0.1)
             counter += 1
             if counter == 10:
-                self.app.showError("Server connection failed")
+                self.app.showError("Server connection failed, please ensure you are connected to the internet. The message sent before this error will not have been sent.")
                 self.stop()
                 break
+        print("Continue response received")
+        

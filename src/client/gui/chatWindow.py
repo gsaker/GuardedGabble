@@ -203,6 +203,7 @@ class MainWindow(QWidget):
                 self.app.mainServer.messageRequest(message, self.currentChatPerson.userID,self.app.publicKey)
             else:
                 self.app.mainServer.messageRequest(message, self.currentChatPerson.userID)
+            self.app.mainServer.waitForContinue()
     def validateMessage(self, message):
         #Check if message is valid
         if len(message) > 0 and len(message) < 440:
