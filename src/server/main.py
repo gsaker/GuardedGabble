@@ -16,11 +16,11 @@ class Server:
         acceptClients.start()
         print("Server started succesfully")
         # Create an instance of the Clients class to store all connected clients
-        if encryptionEnabledStr == "True":
+        if encryptionEnabledStr.lower() == "true":
             encryptionEnabled = True
         else:
             encryptionEnabled = False
-        if storeMessagesStr == "True":
+        if storeMessagesStr.lower() == "true":
             storeMessages = True
         else:
             storeMessages = False

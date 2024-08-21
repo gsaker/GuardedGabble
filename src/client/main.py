@@ -58,10 +58,6 @@ class App:
             self.username = self.configFile.readObject("username")
             #Send the stored userID to the server if it exists in the config file
             self.waitForContinue()
-
-
-            
-
             self.mainServer.setUserIDRequest(self.configFile.readObject("userID"))
             #Load keys from config file
             #Need to convert to bytes to use in encryption
@@ -145,17 +141,7 @@ class App:
         msg.exec_()
         if app:
             app.exit()  # Only exit the QApplication if we created it
-    def waitForContinue(self):
-        self.continueResponseReceived = False
-        counter = 0
-        #Wait until self.continueResponseReceived is true, timeout after 5 seconds
-        while not self.continueResponseReceived:
-            sleep(0.1)
-            counter += 1
-            if counter == 50:
-                self.showError("Server connection failed")
-                self.stop()
-                break
+
 
 if __name__ == "__main__":
     #Displays an error message if the user does not enter an app number

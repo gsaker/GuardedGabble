@@ -23,6 +23,7 @@ class Server:
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.socket.connect((self.serverHost,self.serverPort))
             print("Connected to server")
+            self.waitForContinue()
             return True
         except:
             print("Failed to connect to server")
@@ -74,6 +75,7 @@ class Server:
         userIDRequest.append("requestType",5)
         userIDRequest.append("userID",userID)
         self.sendData(userIDRequest.createJSON())
+        self.waitForContinue()
     def setPublicKeyRequest(self,publicKey):
         print("Sending request to set public key")
         publicKeyRequest = data.SendData()
@@ -220,5 +222,16 @@ class Server:
         #This is used to tell the client that the server is ready to continue
         #with the next request
         print("Continue response received")
-        self.app.continueResponseReceived = True
+        self.continueResponseReceived = True
         
+    def waitForContinue(self):
+        self.continueResponseReceived = False
+        counter = 0
+        #Wait until self.continueResponseReceived is true, timeout after 5 seconds
+        while not self.continueResponseReceived:
+            time.sleep(0.1)
+            counter += 1
+            if counter == 10:
+                self.app.showError("Server connection failed")
+                self.stop()
+                break

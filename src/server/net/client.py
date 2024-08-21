@@ -112,7 +112,6 @@ class Client:
         #clientsQueue is a queue object that will be used to store the clients dictionary
         self.clientsQueue = clientsQueue
         self.active = True
-        self.continueResponse()
     def recieveMessage(self):
         #Will run in seperate thread
         buffer = "" 
