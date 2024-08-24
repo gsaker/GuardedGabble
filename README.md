@@ -22,3 +22,13 @@ For example
 ```bash
 python src/server/main.py 127.0.0.1 64147 true false
 ```
+
+## Client Building
+To build a client app, first install pyinstaller and pillow
+```bash
+pip install pyinstaller pillow
+```
+Then build the app using pyinstaller
+```bash
+pyinstaller -n GuardedGabble -F --windowed --icon=img/icon.ico src/client/main.py
+```
